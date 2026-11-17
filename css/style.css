@@ -19,13 +19,16 @@
   --ciano: #06b6d4;
   --roxo-claro: #a78bfa;
   --ciano-claro: #22d3ee;
-  --grad: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
-  --grad-suave: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(6, 182, 212, 0.18));
+  --roxo-rgb: 124, 58, 237;
+  --ciano-rgb: 6, 182, 212;
+  --grad: linear-gradient(135deg, var(--roxo) 0%, var(--ciano) 100%);
+  --grad-suave: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.22), rgba(var(--ciano-rgb), 0.18));
   --verde: #22c55e;
+  --app-h: 100%;
   --ambar: #f59e0b;
   --vermelho: #ef4444;
   --sombra: 0 10px 30px rgba(0, 0, 0, 0.35);
-  --brilho-neon: 0 0 18px rgba(124, 58, 237, 0.55), 0 0 32px rgba(6, 182, 212, 0.25);
+  --brilho-neon: 0 0 18px rgba(var(--roxo-rgb), 0.55), 0 0 32px rgba(var(--ciano-rgb), 0.25);
   --vidro: blur(20px) saturate(160%);
   --tabbar-bg: rgba(10, 13, 26, 0.72);
   --sheet-bg: rgba(16, 20, 36, 0.94);
@@ -56,9 +59,9 @@
   --texto: #0f172a;
   --texto-2: #4b5568;
   --texto-3: #8a93a6;
-  --grad-suave: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(6, 182, 212, 0.1));
+  --grad-suave: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.12), rgba(var(--ciano-rgb), 0.1));
   --sombra: 0 8px 24px rgba(30, 30, 80, 0.08);
-  --brilho-neon: 0 0 14px rgba(124, 58, 237, 0.3), 0 0 26px rgba(6, 182, 212, 0.15);
+  --brilho-neon: 0 0 14px rgba(var(--roxo-rgb), 0.3), 0 0 26px rgba(var(--ciano-rgb), 0.15);
   --tabbar-bg: rgba(255, 255, 255, 0.78);
   --sheet-bg: rgba(250, 251, 255, 0.97);
   --entrada-bg: rgba(15, 23, 42, 0.05);
@@ -81,11 +84,17 @@ html {
 html,
 body {
   margin: 0;
-  height: 100%;
+  height: var(--app-h, 100%);
+  overflow: hidden;
+  overflow: clip; /* o documento nunca rola: só as telas internas */
 }
+/* O app inteiro mede exatamente a altura da tela (--app-h, calculada no
+   index.html). Todas as camadas usam position: absolute dentro do body —
+   no iPhone, position: fixed com bottom: 0 pode parar acima do fim real
+   da tela e deixar uma faixa preta. */
 body {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  width: 100%;
   overflow: hidden;
   background: var(--bg);
   color: var(--texto);
@@ -144,19 +153,19 @@ svg {
 
 /* Brilhos de fundo (roxo e ciano) */
 .fundo-brilho {
-  position: fixed;
-  inset: -20%;
+  position: absolute;
+  inset: 0;
   pointer-events: none;
-  background: radial-gradient(40% 30% at 15% 10%, rgba(124, 58, 237, 0.28), transparent 70%),
-    radial-gradient(35% 28% at 95% 35%, rgba(6, 182, 212, 0.16), transparent 70%),
-    radial-gradient(40% 30% at 30% 95%, rgba(124, 58, 237, 0.14), transparent 70%);
+  background: radial-gradient(40% 30% at 15% 10%, rgba(var(--roxo-rgb), 0.28), transparent 70%),
+    radial-gradient(35% 28% at 95% 35%, rgba(var(--ciano-rgb), 0.16), transparent 70%),
+    radial-gradient(40% 30% at 30% 95%, rgba(var(--roxo-rgb), 0.14), transparent 70%);
   z-index: 0;
 }
 [data-theme='claro'] .fundo-brilho {
   opacity: 0.55;
 }
 .faixa-status {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -168,7 +177,7 @@ svg {
 
 /* ---------- Telas (abas) ---------- */
 #telas {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 1;
 }
@@ -184,6 +193,12 @@ svg {
   transform: translateY(10px) scale(0.995);
   visibility: hidden;
   transition: opacity 0.24s ease, transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.28s;
+}
+.view[data-pos='esq'] {
+  transform: translateX(-36px) scale(0.99);
+}
+.view[data-pos='dir'] {
+  transform: translateX(36px) scale(0.99);
 }
 .view.ativa {
   opacity: 1;
@@ -246,7 +261,7 @@ svg {
 }
 .neon {
   color: var(--ciano-claro);
-  text-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+  text-shadow: 0 0 12px rgba(var(--ciano-rgb), 0.6);
 }
 [data-theme='claro'] .neon {
   color: var(--roxo);
@@ -277,7 +292,7 @@ svg {
   box-shadow: var(--sombra);
 }
 .neon-borda {
-  border-color: rgba(124, 58, 237, 0.55) !important;
+  border-color: rgba(var(--roxo-rgb), 0.55) !important;
   box-shadow: var(--brilho-neon);
 }
 
@@ -300,7 +315,7 @@ svg {
 .btn.primario {
   background: var(--grad);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 6px 20px rgba(var(--roxo-rgb), 0.35);
 }
 .btn.secundario {
   background: var(--card-forte);
@@ -367,7 +382,7 @@ svg {
   background: var(--grad);
   color: #fff;
   border: 0;
-  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+  box-shadow: 0 4px 14px rgba(var(--ciano-rgb), 0.35);
 }
 .btn-redondo:active {
   transform: scale(0.92);
@@ -398,7 +413,7 @@ svg {
 }
 .entrada:focus {
   border-color: var(--roxo-claro);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 0 0 3px rgba(var(--roxo-rgb), 0.25);
 }
 .entrada::placeholder {
   color: var(--texto-3);
@@ -495,7 +510,7 @@ input[type='time'].entrada::-webkit-date-and-time-value {
   background: var(--grad);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 14px rgba(var(--roxo-rgb), 0.3);
 }
 .chip.on b {
   background: rgba(255, 255, 255, 0.25);
@@ -534,7 +549,7 @@ input[type='time'].entrada::-webkit-date-and-time-value {
 .segmentado button.on {
   background: var(--grad);
   color: #fff;
-  box-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 2px 10px rgba(var(--roxo-rgb), 0.3);
 }
 .segmentado.pequeno button {
   min-height: 36px;
@@ -662,7 +677,7 @@ input[type='time'].entrada::-webkit-date-and-time-value {
   color: #dc2626;
 }
 .tag-etiqueta {
-  background: rgba(6, 182, 212, 0.14);
+  background: rgba(var(--ciano-rgb), 0.14);
   color: var(--ciano-claro);
 }
 [data-theme='claro'] .tag-etiqueta {
@@ -671,7 +686,7 @@ input[type='time'].entrada::-webkit-date-and-time-value {
 .tag-neon {
   background: var(--grad);
   color: #fff;
-  box-shadow: 0 0 12px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 0 12px rgba(var(--roxo-rgb), 0.45);
 }
 .tag-neon svg {
   width: 14px;
@@ -693,16 +708,16 @@ input[type='time'].entrada::-webkit-date-and-time-value {
   padding: 4px 9px;
   border-radius: 999px;
   color: var(--ciano-claro);
-  background: rgba(6, 182, 212, 0.12);
-  border: 1px solid rgba(6, 182, 212, 0.25);
+  background: rgba(var(--ciano-rgb), 0.12);
+  border: 1px solid rgba(var(--ciano-rgb), 0.25);
 }
 .xp-badge:empty {
   display: none;
 }
 [data-theme='claro'] .xp-badge {
   color: var(--roxo);
-  background: rgba(124, 58, 237, 0.08);
-  border-color: rgba(124, 58, 237, 0.2);
+  background: rgba(var(--roxo-rgb), 0.08);
+  border-color: rgba(var(--roxo-rgb), 0.2);
 }
 
 /* ---------- Listas ---------- */
@@ -782,7 +797,7 @@ button.item-linha:active {
 .item-linha.feito .item-nome {
   color: var(--texto-3);
   text-decoration: line-through;
-  text-decoration-color: rgba(124, 58, 237, 0.7);
+  text-decoration-color: rgba(var(--roxo-rgb), 0.7);
 }
 .valor {
   font-family: var(--fonte-num);
@@ -834,7 +849,7 @@ button.item-linha:active {
 .check-circulo.on::before {
   background: var(--grad);
   border-color: transparent;
-  box-shadow: 0 0 14px rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 14px rgba(var(--roxo-rgb), 0.6);
 }
 .check-circulo.on svg {
   transform: scale(1);
@@ -884,7 +899,7 @@ button.item-linha:active {
 }
 .anel-valor {
   transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-  filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.6));
+  filter: drop-shadow(0 0 4px rgba(var(--roxo-rgb), 0.6));
 }
 .anel-centro {
   position: absolute;
@@ -905,7 +920,7 @@ button.item-linha:active {
   font-weight: 700;
 }
 .anel.completo .anel-valor {
-  filter: drop-shadow(0 0 7px rgba(6, 182, 212, 0.9));
+  filter: drop-shadow(0 0 7px rgba(var(--ciano-rgb), 0.9));
 }
 
 /* ---------- Gráficos ---------- */
@@ -919,7 +934,7 @@ button.item-linha:active {
   fill: var(--card-forte);
 }
 .barra-destaque {
-  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.7));
+  filter: drop-shadow(0 0 6px rgba(var(--ciano-rgb), 0.7));
 }
 .graf-valor {
   font-size: 10px;
@@ -1010,7 +1025,7 @@ button.item-linha:active {
   border-radius: inherit;
   background: var(--grad);
   transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 12px rgba(var(--ciano-rgb), 0.6);
   position: relative;
 }
 .barra-xp-fill::after {
@@ -1034,7 +1049,7 @@ button.item-linha:active {
 
 /* ---------- Barra de abas (iOS) ---------- */
 .tabbar {
-  position: fixed;
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
@@ -1073,7 +1088,7 @@ button.item-linha:active {
 }
 .tabbar button.ativa svg {
   transform: translateY(-1px) scale(1.08);
-  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.7));
+  filter: drop-shadow(0 0 6px rgba(var(--ciano-rgb), 0.7));
 }
 .tabbar button:active svg {
   transform: scale(0.88);
@@ -1081,7 +1096,7 @@ button.item-linha:active {
 
 /* ---------- Botão flutuante (+) ---------- */
 .fab {
-  position: fixed;
+  position: absolute;
   right: calc(18px + var(--safe-right));
   bottom: calc(var(--tab-h) + var(--safe-bottom) + 16px);
   z-index: 39;
@@ -1093,7 +1108,7 @@ button.item-linha:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 26px rgba(124, 58, 237, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  box-shadow: 0 10px 26px rgba(var(--roxo-rgb), 0.5), 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
   transition: transform 0.2s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.2s;
 }
 .fab:active {
@@ -1107,7 +1122,7 @@ button.item-linha:active {
 
 /* ---------- Folha inferior (sheet) ---------- */
 .sheet-raiz {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 100;
 }
@@ -1172,7 +1187,7 @@ button.item-linha:active {
 
 /* ---------- Alertas ---------- */
 .alerta-raiz {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 200;
   display: flex;
@@ -1223,7 +1238,7 @@ button.item-linha:active {
 
 /* ---------- Toast ---------- */
 .toast {
-  position: fixed;
+  position: absolute;
   left: calc(16px + var(--safe-left));
   right: calc(16px + var(--safe-right));
   bottom: calc(var(--tab-h) + var(--safe-bottom) + 88px);
@@ -1274,7 +1289,7 @@ body.treinando .toast {
 
 /* ---------- "+XP" flutuante ---------- */
 .xp-float {
-  position: fixed;
+  position: absolute;
   z-index: 400;
   transform: translate(-50%, 0);
   font-family: var(--fonte-num);
@@ -1286,7 +1301,7 @@ body.treinando .toast {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 8px rgba(124, 58, 237, 0.8));
+  filter: drop-shadow(0 0 8px rgba(var(--roxo-rgb), 0.8));
   pointer-events: none;
   animation: xp-sobe 1.25s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
   white-space: nowrap;
@@ -1318,7 +1333,7 @@ body.treinando .toast {
 
 /* ---------- Confete e celebração ---------- */
 .confete {
-  position: fixed;
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -1326,7 +1341,7 @@ body.treinando .toast {
   pointer-events: none;
 }
 .celebracao-raiz {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 450;
   display: flex;
@@ -1347,7 +1362,7 @@ body.treinando .toast {
   padding: 30px 22px 22px;
   border-radius: 28px;
   background: var(--sheet-bg);
-  border: 1px solid rgba(124, 58, 237, 0.5);
+  border: 1px solid rgba(var(--roxo-rgb), 0.5);
   box-shadow: var(--brilho-neon), var(--sombra);
   transform: scale(0.7);
   transition: transform 0.4s cubic-bezier(0.3, 1.6, 0.5, 1);
@@ -1420,7 +1435,7 @@ body.treinando .toast {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 14px rgba(124, 58, 237, 0.45));
+  filter: drop-shadow(0 0 14px rgba(var(--roxo-rgb), 0.45));
 }
 .logo.pequeno {
   font-size: 20px;
@@ -1428,8 +1443,8 @@ body.treinando .toast {
 
 .placar {
   padding: 18px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.1)), var(--card);
-  border-color: rgba(124, 58, 237, 0.3);
+  background: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.2), rgba(var(--ciano-rgb), 0.1)), var(--card);
+  border-color: rgba(var(--roxo-rgb), 0.3);
   cursor: pointer;
 }
 .placar-saudacao h1 {
@@ -1532,6 +1547,7 @@ body.treinando .toast {
 .grade-blocos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense; /* blocos pequenos preenchem os buracos */
   gap: 12px;
 }
 .g-span {
@@ -1566,8 +1582,8 @@ body.treinando .toast {
   transform: scale(0.97);
 }
 .bloco.feito {
-  border-color: rgba(124, 58, 237, 0.55);
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25), rgba(6, 182, 212, 0.14)), var(--card);
+  border-color: rgba(var(--roxo-rgb), 0.55);
+  background: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.25), rgba(var(--ciano-rgb), 0.14)), var(--card);
   box-shadow: var(--brilho-neon);
 }
 @keyframes bloco-entra {
@@ -1970,7 +1986,7 @@ body.treinando .toast {
   background: var(--card);
   border: 1px solid transparent;
 }
-.cal-dia.vazio {
+.cal-dia.cal-vazio {
   background: none;
 }
 .cal-dia.futuro,
@@ -1983,7 +1999,7 @@ body.treinando .toast {
 .cal-dia.cumprido {
   background: var(--grad);
   color: #fff;
-  box-shadow: 0 0 10px rgba(124, 58, 237, 0.45);
+  box-shadow: 0 0 10px rgba(var(--roxo-rgb), 0.45);
 }
 .cal-dia.parcial {
   background: rgba(245, 158, 11, 0.2);
@@ -2134,8 +2150,8 @@ body.treinando .toast {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(6, 182, 212, 0.12)), var(--card);
-  border-color: rgba(124, 58, 237, 0.35);
+  background: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.24), rgba(var(--ciano-rgb), 0.12)), var(--card);
+  border-color: rgba(var(--roxo-rgb), 0.35);
 }
 .destaque-treino h2 {
   font-size: 32px;
@@ -2205,7 +2221,7 @@ body.treinando .toast {
 .semana-pontos span.on {
   background: var(--grad);
   color: #fff;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 8px rgba(var(--roxo-rgb), 0.5);
 }
 .semana-pontos span.hoje {
   outline: 2px solid var(--ciano);
@@ -2224,7 +2240,7 @@ body.treinando .toast {
   min-height: 72px;
 }
 .ficha.proxima {
-  border-color: rgba(124, 58, 237, 0.5);
+  border-color: rgba(var(--roxo-rgb), 0.5);
 }
 .ficha .alca {
   margin-left: -8px;
@@ -2243,7 +2259,7 @@ body.treinando .toast {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+  box-shadow: 0 4px 14px rgba(var(--roxo-rgb), 0.35);
 }
 .ficha-letra.pequena {
   width: 36px;
@@ -2275,13 +2291,13 @@ body.treinando .toast {
 .btn-icone.play {
   color: var(--ciano-claro);
   font-size: 16px;
-  background: rgba(6, 182, 212, 0.12);
+  background: rgba(var(--ciano-rgb), 0.12);
   border-radius: 50%;
 }
 
 /* Modo "Treinando agora" (tela cheia) */
 .treino-ativo {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 80;
   background: var(--bg);
@@ -2295,7 +2311,7 @@ body.treinando .toast {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(60% 30% at 50% 0%, rgba(124, 58, 237, 0.25), transparent 70%);
+  background: radial-gradient(60% 30% at 50% 0%, rgba(var(--roxo-rgb), 0.25), transparent 70%);
 }
 .treino-ativo.aberto {
   transform: none;
@@ -2374,7 +2390,7 @@ body.treinando .toast {
   padding: 14px 12px 8px;
 }
 .ta-ex.completo {
-  border-color: rgba(124, 58, 237, 0.5);
+  border-color: rgba(var(--roxo-rgb), 0.5);
 }
 .ta-ex-topo {
   display: flex;
@@ -2442,7 +2458,7 @@ body.treinando .toast {
   background: var(--grad);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 0 12px rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 12px rgba(var(--roxo-rgb), 0.6);
 }
 .serie-check:active {
   transform: scale(0.9);
@@ -2479,7 +2495,7 @@ body.treinando .toast {
   padding: 10px 12px;
   border-radius: 22px;
   background: var(--sheet-bg);
-  border: 1px solid rgba(124, 58, 237, 0.55);
+  border: 1px solid rgba(var(--roxo-rgb), 0.55);
   box-shadow: var(--brilho-neon), 0 10px 30px rgba(0, 0, 0, 0.45);
   -webkit-backdrop-filter: var(--vidro);
   backdrop-filter: var(--vidro);
@@ -2525,7 +2541,7 @@ body.treinando .tabbar {
 .recordes {
   padding: 14px;
   border-color: rgba(245, 158, 11, 0.5);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(124, 58, 237, 0.1)), var(--card);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(var(--roxo-rgb), 0.1)), var(--card);
 }
 .recordes h4 {
   margin-bottom: 6px;
@@ -2654,8 +2670,8 @@ body.treinando .tabbar {
   align-items: center;
   gap: 18px;
   padding: 18px;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.22), rgba(6, 182, 212, 0.1)), var(--card);
-  border-color: rgba(124, 58, 237, 0.35);
+  background: linear-gradient(135deg, rgba(var(--roxo-rgb), 0.22), rgba(var(--ciano-rgb), 0.1)), var(--card);
+  border-color: rgba(var(--roxo-rgb), 0.35);
 }
 .anel-heroi .anel-centro {
   flex-direction: column;
@@ -2675,7 +2691,7 @@ body.treinando .tabbar {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.5));
+  filter: drop-shadow(0 0 10px rgba(var(--roxo-rgb), 0.5));
 }
 .heroi-info {
   flex: 1;
@@ -2744,8 +2760,8 @@ body.treinando .tabbar {
   color: var(--texto-2);
 }
 .medalha.ok {
-  border-color: rgba(124, 58, 237, 0.45);
-  background: linear-gradient(160deg, rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.08)), var(--card);
+  border-color: rgba(var(--roxo-rgb), 0.45);
+  background: linear-gradient(160deg, rgba(var(--roxo-rgb), 0.2), rgba(var(--ciano-rgb), 0.08)), var(--card);
 }
 .medalha.ok .medalha-icone {
   background: var(--grad);

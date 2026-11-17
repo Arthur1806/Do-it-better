@@ -102,8 +102,62 @@ export function reabrir(id, silencioso = false) {
 // Tela
 // -------------------------------------------------------------
 
+/** Deslizar o cartão: → conclui (ou reabre), ← abre a edição. */
+function ligarDeslizar(el) {
+  let ativo = null;
+  el.addEventListener('pointerdown', (e) => {
+    const w = e.target.closest('.pend-swipe');
+    if (!w || e.button > 0) return;
+    ativo = { w, card: w.querySelector('.pend'), x: e.clientX, y: e.clientY, dx: 0, decidido: false, horizontal: false };
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (!ativo) return;
+    const dx = e.clientX - ativo.x;
+    const dy = e.clientY - ativo.y;
+    if (!ativo.decidido && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      ativo.decidido = true;
+      ativo.horizontal = Math.abs(dx) > Math.abs(dy) * 1.3;
+      if (ativo.horizontal) ativo.w.classList.add('deslizando');
+    }
+    if (!ativo.horizontal) return;
+    ativo.dx = Math.max(-140, Math.min(140, dx));
+    ativo.card.style.transform = `translateX(${ativo.dx}px)`;
+    ativo.w.classList.toggle('para-dir', ativo.dx > 0);
+    ativo.w.classList.toggle('para-esq', ativo.dx < 0);
+    ativo.w.classList.toggle('vai-concluir', ativo.dx > 80);
+    ativo.w.classList.toggle('vai-editar', ativo.dx < -80);
+  });
+  const soltar = () => {
+    if (!ativo) return;
+    const { w, card, dx, horizontal } = ativo;
+    ativo = null;
+    if (!horizontal) return;
+    supressaoClique = Date.now();
+    card.style.transform = '';
+    w.classList.remove('deslizando', 'vai-concluir', 'vai-editar', 'para-dir', 'para-esq');
+    const id = w.dataset.id;
+    const p = dados().pendencias.find((x) => x.id === id);
+    if (!p) return;
+    if (dx > 80) {
+      if (p.concluidaEm) reabrir(id);
+      else {
+        card.classList.add('concluindo');
+        setTimeout(() => concluir(id), 160);
+      }
+    } else if (dx < -80) {
+      vibrar(8);
+      abrirFormPendencia(p);
+    }
+  };
+  el.addEventListener('pointerup', soltar);
+  el.addEventListener('pointercancel', soltar);
+}
+let supressaoClique = 0;
+
 export function montar(el) {
+  ligarDeslizar(el);
   el.addEventListener('click', (e) => {
+    if (Date.now() - supressaoClique < 350) return; // ignora o "clique" do fim do deslize
     const b = e.target.closest('[data-acao]');
     if (!b) return;
     const id = b.dataset.id;
@@ -155,7 +209,9 @@ export function render(el, params = {}) {
     const prazo = p.prazo
       ? `<span class="tag ${late ? 'tag-perigo' : p.prazo === hoje ? 'tag-alerta' : ''}">📅 ${late ? 'Atrasada · ' : ''}${rotuloPrazo(p.prazo)}</span>`
       : '';
-    return `<div class="pend card prio-${p.prioridade} ${feita ? 'feita' : ''}">
+    return `<div class="pend-swipe" data-id="${p.id}">
+      <div class="pend-fundo" aria-hidden="true"><span class="fundo-concluir">${ICONE_CHECK} ${feita ? 'Reabrir' : 'Concluir'}</span><span class="fundo-editar">Editar ✎</span></div>
+      <div class="pend card prio-${p.prioridade} ${feita ? 'feita' : ''}">
       <button class="check-circulo ${feita ? 'on' : ''}" data-acao="${feita ? 'reabrir' : 'concluir'}" data-id="${p.id}" aria-label="${feita ? 'Reabrir' : 'Concluir'}">${ICONE_CHECK}</button>
       <button class="pend-info" data-acao="editar" data-id="${p.id}">
         <span class="pend-titulo">${esc(p.titulo)}</span>
@@ -168,7 +224,7 @@ export function render(el, params = {}) {
         </span>
       </button>
       <span class="xp-badge">${feita ? '' : '+'}${xp}</span>
-    </div>`;
+    </div></div>`;
   };
 
   const vazios = {
@@ -188,6 +244,7 @@ export function render(el, params = {}) {
     <div class="filtros" role="tablist">
       ${filtros.map(([k, n, q]) => `<button class="chip ${filtro === k ? 'on' : ''} ${k === 'atrasadas' && q ? 'chip-alerta' : ''}" data-acao="filtro" data-filtro="${k}" role="tab" aria-selected="${filtro === k}">${n}${q ? ` <b>${q}</b>` : ''}</button>`).join('')}
     </div>
+    ${lista.length && filtro !== 'concluidas' ? '<p class="dica dica-gesto">Dica: deslize → para concluir e ← para editar.</p>' : ''}
     <div class="lista-pend">
       ${lista.length ? lista.map(item).join('') : vazioHTML(ve, vt, vx, filtro !== 'concluidas' ? `<button class="btn primario" data-acao="nova">${ICONE_MAIS} Nova pendência</button>` : '')}
     </div>

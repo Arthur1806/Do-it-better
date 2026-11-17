@@ -9,6 +9,7 @@ import { hojeKey, uid } from './utils.js';
 
 /** Blocos fixos do painel, na ordem inicial. */
 export const BLOCOS_FIXOS = [
+  { tipo: 'missoes', ativo: true, tamanho: 'g', inicio: true },
   { tipo: 'rotina', ativo: true, tamanho: 'p' },
   { tipo: 'check', ref: 'chk-quarto', ativo: true, tamanho: 'p' },
   { tipo: 'treino', ativo: true, tamanho: 'g' },
@@ -16,6 +17,7 @@ export const BLOCOS_FIXOS = [
   { tipo: 'agua', ativo: true, tamanho: 'p' },
   { tipo: 'metaTreinos', ativo: true, tamanho: 'p' },
   { tipo: 'sequencia', ativo: true, tamanho: 'p' },
+  { tipo: 'liga', ativo: true, tamanho: 'p' },
   { tipo: 'semanaXP', ativo: true, tamanho: 'g' },
   { tipo: 'notas', ativo: true, tamanho: 'p' },
   { tipo: 'compras', ativo: true, tamanho: 'p' },
@@ -88,7 +90,7 @@ export function criarExemplos(d) {
     },
   ];
 
-  d.painel = BLOCOS_FIXOS.map((b) => ({ id: b.ref ? `b-${b.ref}` : `b-${b.tipo}`, ...b }));
+  d.painel = BLOCOS_FIXOS.map(({ inicio, ...b }) => ({ id: b.ref ? `b-${b.ref}` : `b-${b.tipo}`, ...b }));
   d.meta.exemplosCriados = true;
 }
 

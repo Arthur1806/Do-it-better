@@ -200,3 +200,41 @@ export function emitir(evento, dados) {
     }
   });
 }
+
+// ---------- Sorteio ----------
+
+/**
+ * Gerador de números aleatórios com semente (sempre o mesmo resultado para a
+ * mesma semente). Usado nas missões do dia: elas não mudam se você reabrir o app.
+ */
+export function aleatorioComSemente(semente) {
+  let h = 1779033703 ^ String(semente).length;
+  for (const c of String(semente)) {
+    h = Math.imul(h ^ c.charCodeAt(0), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+/** Sorteia um item de uma lista com pesos: [{peso, ...}] */
+export function sortearComPeso(lista, rnd = Math.random) {
+  const total = lista.reduce((s, x) => s + x.peso, 0);
+  let r = rnd() * total;
+  for (const x of lista) {
+    r -= x.peso;
+    if (r <= 0) return x;
+  }
+  return lista[lista.length - 1];
+}
+
+/** Soma minutos a um horário 'HH:MM'. */
+export function somarMinutos(hhmm, min) {
+  const [h, m] = String(hhmm || '07:00').split(':').map(Number);
+  const t = Math.max(0, Math.min(23 * 60 + 59, h * 60 + m + min));
+  return `${pad(Math.floor(t / 60))}:${pad(t % 60)}`;
+}

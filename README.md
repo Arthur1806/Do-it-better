@@ -8,6 +8,24 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 2.0
+
+- **Questionário de primeira entrada:** nome, objetivo, companheiro, áreas que quer melhorar, horário em que acorda, rotina sugerida, desafios matinais, treino (local, frequência, divisão e nível), pendências da vida real e metas. O app monta tudo sob medida — inclusive a ordem do painel. Dá para refazer em **Perfil → Ajustes → Refazer personalização** (seus dados são mantidos).
+- **Companheiro que evolui:** Kira (raposa), Bao (panda) ou Rex (lobo). Ele fala com você, muda de humor conforme o seu dia e evolui com o seu nível: Filhote → Aprendiz → Guerreiro → Mestre → Lendário.
+- **Coleção de personagens:** 13 personagens extras desbloqueados pelo seu progresso (sequências, treinos, pendências, água, missões, ligas...). O Dragão Ignis é lendário.
+- **Missões do dia:** 3 missões sorteadas conforme o que você usa. Resgate XP + moedas; as 3 resgatadas dão um baú bônus.
+- **Baú diário:** prêmio surpresa todo dia; abrir em dias seguidos aumenta a "Presença" e o valor do prêmio.
+- **Moedas e loja:** 1 moeda a cada 10 XP, mais missões, baús e medalhas. Compre **Escudo de sequência** (salva sua sequência num dia falhado), **Poção de XP** (+50% por 1 hora) e **temas de cor**.
+- **Medalhas em 4 níveis:** Bronze, Prata, Ouro e Diamante em 14 séries, mais medalhas especiais. Cada uma paga moedas.
+- **Liga da semana:** seu XP semanal define a liga (Bronze → Mestre), comparando com a semana passada.
+- **Combos e sons:** concluir várias coisas em sequência rápida gera combo; efeitos sonoros curtos (desligáveis em Ajustes).
+- **Alerta de sequência em risco** à noite, se a rotina ainda não fechou.
+- **Navegação nova:** transições na direção da aba, indicador luminoso na barra de abas, avisos (números e pontos) nos ícones, barra de título compacta ao rolar, **deslizar para os lados troca de aba**, deslizar uma pendência → conclui / ← edita, e o Perfil dividido em Jornada · Coleção · Medalhas · Loja · Ajustes.
+- **Correção da barra preta no iPhone:** o app mede a altura real da tela no modo instalado e todas as camadas passaram a ser relativas a ela.
+- Seus dados antigos são migrados automaticamente (versão do esquema 1 → 2), sem perder nada.
+
+---
+
 ## Estrutura de pastas
 
 ```
@@ -17,7 +35,8 @@ do-it-better/
 ├── sw.js                   ← service worker: cache offline + VERSÃO do app
 ├── .nojekyll               ← avisa o GitHub Pages para servir os arquivos como estão
 ├── css/
-│   └── style.css           ← todo o visual (tema escuro/claro, vidro fosco, animações)
+│   ├── style.css           ← visual base (tema escuro/claro, vidro fosco, listas, treino)
+│   └── jogo.css            ← companheiro, missões, baú, loja, coleção, questionário, navegação
 ├── icons/
 │   ├── icon.svg            ← ícone original (vetor)
 │   ├── apple-touch-icon.png  (180×180, usado pelo iPhone)
@@ -42,7 +61,12 @@ do-it-better/
     ├── pendencias.js       ← aba Pendências (prazo, prioridade, etiquetas, desfazer)
     ├── treinos.js          ← aba Treinos (fichas, rodízio, Treinando agora, evolução)
     ├── extras.js           ← água, notas rápidas, lista de compras, gastos do mês
-    └── perfil.js           ← aba Perfil (nível, gráficos, conquistas, ajustes, backup)
+    ├── perfil.js           ← aba Perfil (Jornada, Coleção, Medalhas, Loja, Ajustes)
+    ├── onboarding.js       ← questionário de primeira entrada (monta o app para você)
+    ├── personagens.js      ← companheiros, evolução, coleção, humor e falas
+    ├── missoes.js          ← missões do dia, baú diário e ligas semanais
+    ├── loja.js             ← itens (escudo, poção) e temas de cor
+    └── sons.js             ← efeitos sonoros gerados na hora (sem arquivos de áudio)
 ```
 
 ---
@@ -61,7 +85,9 @@ do-it-better/
 
 - **Nível N** precisa de **100 × N XP** para passar ao próximo.
 - **Multiplicador:** a cada 7 dias seguidos com a rotina 100% → +10% de XP (máximo +50%). Falhou um dia, zera. Dias sem itens programados não contam nem quebram.
-- **Desfazer** sempre remove o XP — não há pontos duplicados.
+- **Desfazer** sempre remove o XP (e as moedas que ele deu) — não há pontos duplicados.
+- **Escudo de sequência:** se você falhar a rotina num dia e tiver escudo, ele é usado sozinho na virada do dia e a sequência continua (o dia aparece com 🛡️ no calendário).
+- **Moedas:** 1 a cada 10 XP; missões 10–20; baú diário 10–70 (cresce com a presença); medalhas 🥉10 · 🥈25 · 🥇60 · 💎150; carinho no companheiro 5 por dia.
 - Todos os valores podem ser mudados em **Perfil → Ajustes → Valores de XP**.
 
 ---
@@ -144,7 +170,7 @@ git push -u origin main
 1. Edite os arquivos que quiser.
 2. Abra o `sw.js` e **aumente a versão** na linha:
    ```js
-   const VERSAO = '1.0.0';   // ex.: mude para '1.0.1'
+   const VERSAO = '2.0.0';   // ex.: mude para '2.0.1'
    ```
    Sem isso, o iPhone continua usando a versão guardada no cache.
 3. Se criou um **arquivo novo** (ex.: `js/financas.js`), adicione o caminho dele na lista `ARQUIVOS` do `sw.js`.
@@ -171,6 +197,9 @@ Seus dados **não se perdem** na atualização.
 
 - **Campo novo com valor padrão** (ex.: `ajustes.metaSono`): adicione em `estadoPadrao()` no `js/store.js`. Os dados antigos recebem o padrão automaticamente.
 - **Mudança de formato** (renomear ou reorganizar dados): em `js/store.js`, aumente `SCHEMA_VERSION` e escreva a migração em `MIGRACOES` (há um exemplo comentado lá).
-- **Nova conquista:** adicione um item na lista `CONQUISTAS` em `js/conquistas.js`.
+- **Nova medalha:** adicione uma série em `SERIES` (ou uma especial em `ESPECIAIS`) em `js/conquistas.js`.
+- **Novo personagem:** adicione em `PERSONAGENS` em `js/personagens.js`, com o requisito e a função `teste(d)`.
+- **Nova missão:** adicione em `CATALOGO` em `js/missoes.js`.
+- **Novo item ou tema na loja:** `ITENS` e `TEMAS` em `js/loja.js`.
 - **Novo tipo de bloco no painel:** veja o comentário no topo de `js/painel.js`.
 - Depois de qualquer mudança, lembre de aumentar a `VERSAO` no `sw.js`.

@@ -27,12 +27,20 @@ import {
 } from './ui.js';
 import { irPara } from './nav.js';
 import { BLOCOS_FIXOS } from './seed.js';
+import { companheiro, avatarHTML, humor, fala } from './personagens.js';
+import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
+import { pocaoAtiva } from './xp.js';
+import { tocar } from './sons.js';
+import { confete, celebrar } from './ui.js';
 
 let editando = false;
 let ultimoPctXP = null; // para animar a barra de XP enchendo
+let variacaoFala = 0; // muda a fala do companheiro a cada toque
 
 /** Nome e emoji de cada tipo de bloco fixo. */
 const TIPOS = {
+  missoes: { nome: 'Missões do dia', emoji: '🎯' },
+  liga: { nome: 'Liga da semana', emoji: '🏆' },
   rotina: { nome: 'Rotina do dia', emoji: '✅' },
   pendencias: { nome: 'Pendências', emoji: '📌' },
   treino: { nome: 'Treino do dia', emoji: '🏋️' },
@@ -52,7 +60,9 @@ export function sincronizarBlocos() {
   for (const b of BLOCOS_FIXOS) {
     if (b.tipo === 'check') continue;
     if (!d.painel.some((x) => x.tipo === b.tipo)) {
-      d.painel.push({ id: `b-${b.tipo}`, tipo: b.tipo, ativo: b.ativo, tamanho: b.tamanho });
+      const novo = { id: `b-${b.tipo}`, tipo: b.tipo, ativo: b.ativo, tamanho: b.tamanho };
+      if (b.inicio) d.painel.unshift(novo);
+      else d.painel.push(novo);
       mudou = true;
     }
   }
@@ -93,11 +103,14 @@ export function alternarCheck(id) {
     const reg = registroDia(hoje);
     if (reg.checks[c.id]) {
       removerXP(reg.checks[c.id].lanc);
+      if (reg.checks[c.id].noPrazo) d.stats.checksCedo = Math.max(0, (d.stats.checksCedo || 0) - 1);
       delete reg.checks[c.id];
     } else {
       const atrasado = c.horaLimite && horaAtual() > c.horaLimite;
       const l = ganharXP({ base: xpCheckAgora(c), fonte: 'check', ref: c.id, rotulo: c.nome });
-      reg.checks[c.id] = { lanc: l.id, ts: Date.now() };
+      const noPrazo = !!c.horaLimite && !atrasado;
+      reg.checks[c.id] = { lanc: l.id, ts: Date.now(), noPrazo };
+      if (noPrazo) d.stats.checksCedo = (d.stats.checksCedo || 0) + 1;
       if (atrasado) setTimeout(() => toast(`Depois das ${c.horaLimite} vale metade do XP`), 100);
     }
     atualizarMelhoresSequencias();
@@ -182,6 +195,32 @@ export function abrirFormCheck(c = null) {
 const topo = (emoji, nome, extra = '') => `<div class="bloco-topo"><span class="bloco-emoji">${emoji}</span><span class="bloco-nome">${esc(nome)}</span>${extra}</div>`;
 
 const CONTEUDO = {
+  missoes(b, g) {
+    const ms = missoesDoDia();
+    const feitas = ms.filter((m) => m.resgatada).length;
+    return `${topo('🎯', 'Missões do dia', `<span class="bloco-extra">${feitas}/${ms.length}</span>`)}
+      <div class="missoes">${ms.map((m) => `<div class="missao ${m.resgatada ? 'resgatada' : m.completa ? 'pronta' : ''}">
+          <span class="missao-icone">${m.icone}</span>
+          <span class="missao-info"><span class="missao-texto">${esc(m.texto)}</span>
+            <span class="missao-barra"><i style="width:${(m.progresso / m.alvo) * 100}%"></i></span></span>
+          ${m.resgatada ? `<span class="missao-ok">${ICONE_CHECK}</span>`
+            : m.completa ? `<button class="btn-resgatar" data-acao="resgatar" data-item="${m.tipo}">Resgatar</button>`
+            : `<span class="missao-premio">+${m.xp}<small> XP</small><br><small>🪙${m.moedas}</small></span>`}
+        </div>`).join('') || '<small class="apagado">Crie hábitos ou pendências para receber missões.</small>'}</div>
+      ${ms.length && feitas < ms.length ? `<div class="bloco-rodape">Complete as ${ms.length} e ganhe um <b>baú bônus</b> 🎁</div>` : ms.length ? '<div class="bloco-rodape">Todas resgatadas! Volte amanhã para novas missões ✨</div>' : ''}`;
+  },
+
+  liga() {
+    const l = ligaAtual();
+    return `${topo('🏆', 'Liga da semana')}
+      <div class="bloco-corpo coluna">
+        <div class="liga-nome"><span class="liga-emoji">${l.emoji}</span>${l.nome}</div>
+        <small>${l.xp} XP nesta semana</small>
+        <div class="barra"><div class="barra-fill" style="width:${l.pct * 100}%"></div></div>
+      </div>
+      <div class="bloco-rodape">${l.proxima ? `${l.falta} XP para ${l.proxima.emoji} ${l.proxima.nome}` : 'Liga máxima! 👑'}</div>`;
+  },
+
   rotina(b, g) {
     const hoje = hojeKey();
     const r = resumoRotina(hoje);
@@ -340,6 +379,8 @@ function acaoBloco(b) {
     case 'sequencia': return irPara('rotina');
     case 'semanaXP': return irPara('perfil');
     case 'check': return alternarCheck(b.ref);
+    case 'missoes': return;
+    case 'liga': return irPara('perfil', { secao: 'jornada' });
   }
 }
 
@@ -401,7 +442,22 @@ export function montar(el) {
         if (!editando) abrirNotas({ nova: true });
         break;
       case 'ir-perfil':
-        irPara('perfil');
+        irPara('perfil', { secao: 'jornada' });
+        break;
+      case 'companheiro':
+        tocarCompanheiro(el);
+        break;
+      case 'bau':
+        abrirBauAnimado();
+        break;
+      case 'ir-rotina':
+        irPara('rotina');
+        break;
+      case 'resgatar':
+        if (!editando) resgatar(item);
+        break;
+      case 'ir-loja':
+        irPara('perfil', { secao: 'loja' });
         break;
     }
   });
@@ -438,27 +494,55 @@ export function render(el, params = {}) {
   };
 
   const nome = d.ajustes.nome ? `, ${esc(d.ajustes.nome)}` : '';
+  const p = companheiro();
+  const hu = humor();
+  const r = resumoRotina(hoje);
+  const seqOntem = sequenciaRotina(true);
+  const h = new Date().getHours();
+  const emRisco = h >= 17 && r.total > 0 && r.feitos < r.total && seqOntem > 0;
+  const pocao = pocaoAtiva();
+
   el.innerHTML = `
     <header class="topo-hoje">
       <div class="logo">Do It Better</div>
-      <button class="btn-texto" data-acao="editar-painel">${editando ? 'Concluir' : 'Editar painel'}</button>
+      <div class="topo-acoes">
+        <button class="pilula-moedas" data-acao="ir-loja" aria-label="${d.carteira.moedas} moedas — abrir loja">🪙 <b>${d.carteira.moedas}</b>${d.carteira.escudos ? `<span class="pilula-escudo">🛡️${d.carteira.escudos}</span>` : ''}</button>
+        <button class="btn-icone ${editando ? 'ativo' : ''}" data-acao="editar-painel" aria-label="${editando ? 'Concluir edição' : 'Editar painel'}">${editando ? ICONE_CHECK : ICONE_EDITAR}</button>
+      </div>
     </header>
 
-    <section class="placar card" data-acao="ir-perfil">
-      <div class="placar-saudacao">
-        <h1>${saudacao()}${nome}!</h1>
-        <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
+    <section class="placar card">
+      <div class="placar-topo">
+        <button class="placar-avatar" data-acao="companheiro" aria-label="Falar com ${esc(p.nome)}">
+          ${avatarHTML(p, { tam: 'g', nivel: info.nivel, humor: hu })}
+        </button>
+        <div class="placar-saudacao">
+          <h1>${saudacao()}${nome}!</h1>
+          <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
+          <button class="balao" data-acao="companheiro"><b>${esc(p.nome)}:</b> ${esc(fala(variacaoFala))}</button>
+        </div>
       </div>
-      <div class="placar-linha">
+      <div class="placar-linha" data-acao="ir-perfil">
         <div class="nivel-badge" aria-label="Nível ${info.nivel}"><small>NÍVEL</small><strong>${info.nivel}</strong></div>
         <div class="placar-xp">
-          <div class="placar-titulo"><span>${info.titulo}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}</div>
+          <div class="placar-titulo"><span>${info.titulo}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +50%</span>` : ''}</div>
           <div class="barra-xp"><div class="barra-xp-fill" style="width:${pctInicial}%"></div></div>
           <small>${info.xpNoNivel} / ${info.xpParaProximo} XP · faltam ${info.falta}</small>
         </div>
         <div class="pontos-dia"><strong>${xpHoje}</strong><small>XP hoje</small></div>
       </div>
     </section>
+
+    ${!editando && bauDisponivel() ? `<button class="banner banner-bau" data-acao="bau">
+        <span class="banner-emoji balanca">🎁</span>
+        <span class="banner-texto"><b>Baú diário disponível!</b><small>${d.stats.ultimoCheckin && d.stats.checkinSeq ? `Presença: ${d.stats.checkinSeq} dia(s) seguidos · quanto mais seguido, maior o prêmio` : 'Abra todo dia: prêmios crescem com a sua presença'}</small></span>
+        <span class="banner-cta">Abrir</span>
+      </button>` : ''}
+    ${!editando && emRisco ? `<button class="banner banner-risco" data-acao="ir-rotina">
+        <span class="banner-emoji pulsa">🔥</span>
+        <span class="banner-texto"><b>Sua sequência de ${seqOntem} dias está em risco!</b><small>Faltam ${r.total - r.feitos} hábito(s) hoje.${d.carteira.escudos ? ' Você tem 🛡️, mas não desperdice!' : ' Sem escudo para te salvar.'}</small></span>
+        <span class="banner-cta">Ir</span>
+      </button>` : ''}
 
     ${editando ? `<div class="painel-dica card">
         <p>Arraste pela alça <b>⋮⋮</b> para mudar a ordem. <b>P/G</b> muda o tamanho e o olho mostra/oculta.</p>
@@ -482,6 +566,95 @@ export function render(el, params = {}) {
       itens: '.bloco',
       alca: '.alca',
       aoSoltar: (ids) => alterar(() => (dados().painel = reordenarPorIds(dados().painel, ids))),
+    });
+  }
+}
+
+// -------------------------------------------------------------
+// Companheiro, baú e missões
+// -------------------------------------------------------------
+
+/** Tocar no companheiro: nova fala, pulinho e (1x por dia) um carinho que dá moedas. */
+function tocarCompanheiro(el) {
+  variacaoFala++;
+  const d = dados();
+  const reg = registroDia(hojeKey());
+  const p = companheiro();
+  if (!reg.carinho) {
+    alterar(() => {
+      reg.carinho = true;
+      d.carteira.moedas += 5;
+    });
+    tocar('moeda');
+    toast(`${p.nome} ficou feliz com o carinho! +5 🪙`);
+  } else {
+    render(el);
+  }
+  const av = el.querySelector('.placar-avatar .avatar');
+  if (av) {
+    av.classList.remove('pula');
+    void av.offsetWidth;
+    av.classList.add('pula');
+  }
+  vibrar(10);
+}
+
+/** Abre o baú diário com animação de suspense. */
+function abrirBauAnimado() {
+  let premio;
+  alterar(() => (premio = abrirBau()), { silencioso: true });
+  if (!premio) return;
+  const textos = {
+    moedas: [`🪙 ${premio.valor} moedas`, 'Gaste na loja: escudos, poções e temas.'],
+    xp: [`⚡ ${premio.valor} XP`, 'Direto para a sua barra de nível!'],
+    escudo: ['🛡️ Escudo de sequência', 'Protege sua sequência num dia falhado.'],
+    pocao: ['🧪 Poção de XP (30 min)', '+50% de XP em tudo pelos próximos 30 minutos!'],
+  };
+  const [titulo, sub] = textos[premio.tipo];
+  const raiz = document.createElement('div');
+  raiz.className = 'bau-raiz';
+  raiz.innerHTML = `<div class="bau-caixa">
+      <div class="bau-emoji tremendo">🎁</div>
+      <div class="bau-premio">
+        ${premio.raro ? '<span class="tag tag-neon">RARO!</span>' : ''}
+        <h3 class="gradiente-texto">${titulo}</h3>
+        <p>${sub}</p>
+        <small>Presença: ${premio.presenca} dia(s) seguido(s)${premio.presenca > 1 ? ' · bônus aplicado!' : ''}</small>
+        <button class="btn primario largo">Pegar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(raiz);
+  requestAnimationFrame(() => raiz.classList.add('aberta'));
+  vibrar([20, 40, 20, 40, 20]);
+  setTimeout(() => {
+    raiz.classList.add('revelado');
+    tocar('bau');
+    confete({ quantidade: premio.raro ? 160 : 90 });
+    vibrar(30);
+  }, 1100);
+  const fechar = () => {
+    raiz.classList.remove('aberta');
+    setTimeout(() => raiz.remove(), 250);
+    alterar(() => {}); // redesenha a tela com o prêmio aplicado
+  };
+  raiz.addEventListener('click', (e) => {
+    if (raiz.classList.contains('revelado') && (e.target.closest('button') || e.target === raiz)) fechar();
+  });
+}
+
+/** Resgata a recompensa de uma missão concluída. */
+function resgatar(tipo) {
+  let res;
+  alterar(() => (res = resgatarMissao(tipo)));
+  if (!res) return;
+  tocar('moeda');
+  vibrar([15, 30, 15]);
+  toast(`Missão resgatada! +${res.xp} XP · +${res.moedas} 🪙`);
+  if (res.bonus) {
+    celebrar({
+      emoji: '🎁',
+      titulo: 'Todas as missões!',
+      subtitulo: `Baú bônus: +${res.bonus.xp} XP e +${res.bonus.moedas} moedas${res.bonus.escudo ? ' e um 🛡️ escudo!' : '.'} Volte amanhã para novas missões.`,
     });
   }
 }

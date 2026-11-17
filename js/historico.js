@@ -82,6 +82,7 @@ export function statusDia(dia) {
   if (dia < dados().criadoEm) return 'pre';
   const r = resumoRotina(dia);
   if (r.total === 0) return 'neutro';
+  if (r.protegido) return 'protegido';
   if (r.feitos >= r.total) return 'cumprido';
   if (dia === hoje) return 'hoje';
   return r.feitos > 0 ? 'parcial' : 'falhou';
@@ -101,7 +102,8 @@ export function sequenciaRotina(ateOntem = false) {
   let guarda = 0;
   while (dia >= d.criadoEm && guarda++ < 4000) {
     const r = resumoRotina(dia);
-    if (r.total > 0) {
+    // dia protegido por escudo: não conta, mas também não quebra a sequência
+    if (r.total > 0 && !r.protegido) {
       if (r.feitos >= r.total) n++;
       else break;
     }
@@ -172,14 +174,43 @@ export function fecharDias() {
   }
   if (dia < d.criadoEm) dia = d.criadoEm;
   let guarda = 0;
+  const protegidos = [];
   while (dia < hoje && guarda++ < 4000) {
     const reg = registroDia(dia);
-    if (!reg.resumo) reg.resumo = calcularResumo(dia);
+    if (!reg.resumo) {
+      reg.resumo = calcularResumo(dia);
+      // ESCUDO DE SEQUÊNCIA: um dia falhado é protegido se houver escudo
+      // e se havia uma sequência para proteger.
+      const r = reg.resumo;
+      if (r.total > 0 && r.feitos < r.total && d.carteira && d.carteira.escudos > 0 && sequenciaAte(dia) > 0) {
+        d.carteira.escudos--;
+        r.protegido = true;
+        protegidos.push(dia);
+      }
+    }
     dia = somarDias(dia, 1);
   }
   d.meta.ultimoDia = hoje;
+  d.meta.diasProtegidos = protegidos; // o app avisa ao abrir
   atualizarMelhoresSequencias();
   return true;
+}
+
+/** Sequência que existia ANTES do dia informado (usada pelo escudo). */
+function sequenciaAte(diaFalho) {
+  const d = dados();
+  let n = 0;
+  let dia = somarDias(diaFalho, -1);
+  let guarda = 0;
+  while (dia >= d.criadoEm && guarda++ < 4000) {
+    const r = resumoRotina(dia);
+    if (r.total > 0 && !r.protegido) {
+      if (r.feitos >= r.total) n++;
+      else break;
+    }
+    dia = somarDias(dia, -1);
+  }
+  return n;
 }
 
 /** Status de cada dia da semana atual (segunda a domingo). */

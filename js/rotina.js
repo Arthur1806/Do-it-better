@@ -218,9 +218,9 @@ function calendarioHTML() {
   const primeiro = `${mesVisto}-01`;
   const diasNoMes = new Date(a, m, 0).getDate();
   const vazios = (diaSemana(primeiro) + 6) % 7; // segunda = coluna 0
-  const cont = { cumprido: 0, parcial: 0, falhou: 0 };
+  const cont = { cumprido: 0, parcial: 0, falhou: 0, protegido: 0 };
   let celulas = '';
-  for (let i = 0; i < vazios; i++) celulas += '<span class="cal-dia vazio"></span>';
+  for (let i = 0; i < vazios; i++) celulas += '<span class="cal-dia cal-vazio"></span>';
   for (let dd = 1; dd <= diasNoMes; dd++) {
     const k = `${mesVisto}-${String(dd).padStart(2, '0')}`;
     const st = statusDia(k);
@@ -240,6 +240,7 @@ function calendarioHTML() {
       <span><i class="cumprido"></i>${cont.cumprido} cumpridos</span>
       <span><i class="parcial"></i>${cont.parcial} parciais</span>
       <span><i class="falhou"></i>${cont.falhou} falhados</span>
+      ${cont.protegido ? `<span><i class="protegido"></i>${cont.protegido} com escudo</span>` : ''}
     </div>
   </section>`;
 }
@@ -247,7 +248,7 @@ function calendarioHTML() {
 function mostrarDia(k) {
   const st = statusDia(k);
   const r = resumoRotina(k);
-  const nomes = { cumprido: 'cumprido ✅', parcial: 'parcial', falhou: 'não cumprido', hoje: 'em andamento', neutro: 'sem itens', pre: 'antes de você começar', futuro: 'ainda não chegou' };
+  const nomes = { protegido: 'protegido pelo escudo 🛡️', cumprido: 'cumprido ✅', parcial: 'parcial', falhou: 'não cumprido', hoje: 'em andamento', neutro: 'sem itens', pre: 'antes de você começar', futuro: 'ainda não chegou' };
   const detalhe = r.total && st !== 'pre' && st !== 'futuro' ? ` (${r.feitos}/${r.total})` : '';
   toast(`${formatarData(k)}: ${nomes[st]}${detalhe}`);
 }

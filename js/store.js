@@ -15,7 +15,7 @@
 import { hojeKey } from './utils.js';
 
 /** Versão atual do formato dos dados. Aumente ao criar uma migração. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /** Chave usada no localStorage. */
 const CHAVE = 'doitbetter:dados';
@@ -34,6 +34,26 @@ export function estadoPadrao() {
     meta: {
       ultimoDia: hojeKey(), // último dia "aberto" (para detectar a virada do dia)
       exemplosCriados: false,
+      onboardingFeito: false, // questionário de primeira entrada
+    },
+    // Perfil do jogador (preenchido no questionário de primeira entrada)
+    perfil: {
+      objetivo: '',
+      focos: [], // áreas: saude, treino, estudos, trabalho, casa, financas, mente, sono
+      acorda: '07:00',
+      personagem: 'raposa', // companheiro ativo
+    },
+    // Economia do jogo
+    carteira: {
+      moedas: 0,
+      escudos: 0, // protegem a sequência em um dia falhado
+      boostAte: 0, // poção de XP ativa até este timestamp
+    },
+    colecao: {}, // { idPersonagem: timestampDoDesbloqueio }
+    colecaoVista: [], // personagens já vistos (para o aviso de "novo")
+    loja: {
+      temas: ['neon'],
+      temaAtivo: 'neon',
     },
     ajustes: {
       nome: '',
@@ -51,6 +71,7 @@ export function estadoPadrao() {
       metaTreinosSemana: 4,
       metaAgua: 8, // copos por dia
       limiteGastos: 0, // 0 = sem limite
+      sons: true,
     },
     // XP: lançamentos individuais (permite desfazer sem duplicar pontos)
     xp: {
@@ -61,6 +82,13 @@ export function estadoPadrao() {
     conquistas: {}, // { idConquista: timestampDoDesbloqueio }
     stats: {
       melhorSequencia: 0, // maior sequência de rotina 100%
+      checkinSeq: 0, // dias seguidos abrindo o baú diário
+      melhorCheckin: 0,
+      ultimoCheckin: null,
+      checksCedo: 0, // desafios matinais cumpridos no prazo
+      missoesResgatadas: 0,
+      melhorLiga: 0, // índice da melhor liga semanal
+      comboMax: 0,
     },
     // Painel (tela Hoje): ordem, visibilidade e tamanho dos blocos
     painel: [], // { id, tipo, ref?, ativo, tamanho: 'p' | 'g' }
@@ -101,6 +129,27 @@ export function estadoPadrao() {
 const MIGRACOES = {
   // 1: dados criados antes de existir versão (não deve acontecer, mas é seguro)
   1: (d) => d,
+
+  // 2: personagens, moedas, missões, questionário e medalhas por níveis.
+  // Os campos novos recebem padrão via normalizar(); aqui só o que depende
+  // dos dados antigos.
+  2: (d) => {
+    d.meta = d.meta || {};
+    d.meta.onboardingFeito = false; // todos veem o questionário novo uma vez
+    // Moedas iniciais proporcionais ao XP já conquistado + 1 escudo de presente
+    d.carteira = { moedas: Math.floor((d.xp && d.xp.total ? d.xp.total : 0) / 10), escudos: 1, boostAte: 0 };
+    // Medalhas antigas -> novas séries (mantém a data do desbloqueio)
+    const mapa = {
+      'primeiro-treino': 'treinos-1', 'rotina-7': 'sequencia-2', 'rotina-30': 'sequencia-3',
+      'quarto-30': 'quarto-2', 'pend-1': 'pendencias-1', 'nivel-5': 'nivel-1', 'nivel-10': 'nivel-2',
+      'recorde': 'recordes-1', 'dia-perfeito': 'perfeitos-1', 'hidratado': 'agua-1',
+    };
+    const novas = {};
+    for (const [k, ts] of Object.entries(d.conquistas || {})) novas[mapa[k] || k] = ts;
+    delete novas['primeiro-xp'];
+    d.conquistas = novas;
+    return d;
+  },
 };
 
 /** Aplica, em ordem, todas as migrações necessárias. */

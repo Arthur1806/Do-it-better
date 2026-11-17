@@ -115,10 +115,10 @@ export function linha(pontos, { altura = 190, unidade = 'kg' } = {}) {
 
   return `<svg class="grafico" viewBox="0 0 ${L} ${H}" role="img" aria-label="Evolução em ${esc(unidade)}">
     <defs><linearGradient id="g-area" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#7C3AED" stop-opacity=".35"/><stop offset="1" stop-color="#06B6D4" stop-opacity="0"/>
+      <stop offset="0" style="stop-color: var(--roxo); stop-opacity: .35"/><stop offset="1" style="stop-color: var(--ciano); stop-opacity: 0"/>
     </linearGradient>
     <linearGradient id="g-linha" gradientUnits="userSpaceOnUse" x1="${esq}" y1="0" x2="${L - dir}" y2="0">
-      <stop offset="0" stop-color="#7C3AED"/><stop offset="1" stop-color="#06B6D4"/>
+      <stop offset="0" style="stop-color: var(--roxo)"/><stop offset="1" style="stop-color: var(--ciano)"/>
     </linearGradient></defs>
     ${grades.join('')}
     ${pontos.length > 1 ? `<path d="${area}" fill="url(#g-area)"/>` : ''}

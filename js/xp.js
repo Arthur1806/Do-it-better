@@ -67,12 +67,16 @@ export function ganharXP({ base, fonte, ref = null, rotulo = '', multiplicar = t
   const d = dados();
   const dia = hojeKey();
   const nivelAntes = nivelInfo(d.xp.total).nivel;
-  const mult = multiplicar ? multiplicador() : 0;
+  // multiplicador de sequência + poção de XP (+50%) se estiver ativa
+  const mult = multiplicar ? multiplicador() + (pocaoAtiva() ? 50 : 0) : 0;
   const xp = Math.round(base * (1 + mult / 100));
-  const lanc = { id: uid(), dia, ts: Date.now(), base, mult, xp, fonte, ref, rotulo };
+  // Cada 10 XP rende 1 moeda (mínimo 1). Desfazer devolve as moedas.
+  const moedas = xp > 0 ? Math.max(1, Math.round(xp / 10)) : 0;
+  const lanc = { id: uid(), dia, ts: Date.now(), base, mult, xp, moedas, fonte, ref, rotulo };
   d.xp.lancamentos.push(lanc);
   d.xp.total += xp;
   d.xp.porDia[dia] = (d.xp.porDia[dia] || 0) + xp;
+  d.carteira.moedas += moedas;
   emitir('xp', lanc);
   const depois = nivelInfo(d.xp.total);
   if (depois.nivel > nivelAntes) emitir('nivel', depois);
@@ -87,6 +91,7 @@ export function removerXP(idLanc) {
   if (i < 0) return null;
   const [lanc] = d.xp.lancamentos.splice(i, 1);
   d.xp.total = Math.max(0, d.xp.total - lanc.xp);
+  d.carteira.moedas = Math.max(0, d.carteira.moedas - (lanc.moedas || 0));
   d.xp.porDia[lanc.dia] = (d.xp.porDia[lanc.dia] || 0) - lanc.xp;
   if (d.xp.porDia[lanc.dia] <= 0) delete d.xp.porDia[lanc.dia];
   emitir('xp-removido', lanc);
@@ -127,4 +132,28 @@ export function recalcularXP() {
   }
   d.xp.total = total;
   d.xp.porDia = porDia;
+}
+
+// -------------------------------------------------------------
+// Moedas e poção de XP
+// -------------------------------------------------------------
+
+/** A poção de XP (+50%) está ativa agora? */
+export function pocaoAtiva() {
+  return (dados().carteira.boostAte || 0) > Date.now();
+}
+
+/** Ganha moedas (baú, missões, medalhas). */
+export function ganharMoedas(qtd, motivo = '') {
+  if (!qtd) return;
+  dados().carteira.moedas += qtd;
+  emitir('moedas', { qtd, motivo });
+}
+
+/** Gasta moedas. Retorna false se não tiver saldo. */
+export function gastarMoedas(qtd) {
+  const c = dados().carteira;
+  if (c.moedas < qtd) return false;
+  c.moedas -= qtd;
+  return true;
 }
