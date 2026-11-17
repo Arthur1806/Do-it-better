@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="escuro">
+<head>
+  <meta charset="utf-8">
+  <!-- viewport-fit=cover: o app ocupa a tela toda (atrás do notch e da barra inferior) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Do It Better</title>
+  <meta name="description" content="Organize seu dia como um jogo: XP, níveis e conquistas para tarefas, rotina e treinos.">
+  <meta name="theme-color" content="#070A14">
+  <meta name="color-scheme" content="dark light">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Apple: abrir como app (sem barra do Safari) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Do It Better">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Aplica o tema salvo antes de desenhar, para não piscar -->
+  <script>
+    try {
+      if (localStorage.getItem('doitbetter:tema') === 'claro') document.documentElement.dataset.theme = 'claro';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <!-- Gradientes reutilizados por todos os gráficos SVG -->
+  <svg class="svg-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="g-dib" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7C3AED"/>
+        <stop offset="1" stop-color="#06B6D4"/>
+      </linearGradient>
+      <linearGradient id="g-dib-v" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#7C3AED"/>
+        <stop offset="1" stop-color="#06B6D4"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <div class="fundo-brilho" aria-hidden="true"></div>
+  <div class="faixa-status" aria-hidden="true"></div>
+
+  <main id="telas">
+    <section class="view" id="view-hoje" aria-label="Hoje"></section>
+    <section class="view" id="view-rotina" aria-label="Rotina"></section>
+    <section class="view" id="view-pendencias" aria-label="Pendências"></section>
+    <section class="view" id="view-treinos" aria-label="Treinos"></section>
+    <section class="view" id="view-perfil" aria-label="Perfil"></section>
+  </main>
+
+  <!-- Botão flutuante: adicionar rápido -->
+  <button id="fab" class="fab" aria-label="Adicionar">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- Barra de abas (estilo iOS) -->
+  <nav class="tabbar" id="tabbar" aria-label="Navegação">
+    <button data-aba="hoje" aria-label="Hoje">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="18" height="7.5" rx="2"/></svg>
+      <span>Hoje</span>
+    </button>
+    <button data-aba="rotina" aria-label="Rotina">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Rotina</span>
+    </button>
+    <button data-aba="pendencias" aria-label="Pendências">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2"/></svg>
+      <span>Pendências</span>
+    </button>
+    <button data-aba="treinos" aria-label="Treinos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>
+      <span>Treinos</span>
+    </button>
+    <button data-aba="perfil" aria-label="Perfil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+      <span>Perfil</span>
+    </button>
+  </nav>
+
+  <noscript>
+    <p style="padding:40px;color:#fff;font-family:sans-serif">O Do It Better precisa de JavaScript ativado.</p>
+  </noscript>
+
+  <!-- Módulos ES (caminhos relativos, funciona em /do-it-better/) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
