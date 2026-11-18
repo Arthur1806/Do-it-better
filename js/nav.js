@@ -1,6 +1,6 @@
 // =============================================================
-// nav.js — navegação entre as 5 abas (Hoje, Rotina, Pendências,
-// Treinos, Perfil).
+// nav.js — navegação entre as 5 abas (Hoje, Tarefas, Treinos, Pet,
+// Perfil).
 // • Transição na direção da aba (desliza para a esquerda/direita).
 // • Indicador luminoso que corre pela barra de abas.
 // • Barra de título compacta que aparece ao rolar a tela.
@@ -10,8 +10,17 @@
 //   render(el, params)    -> desenha a tela
 // =============================================================
 
-const ORDEM = ['hoje', 'rotina', 'pendencias', 'treinos', 'perfil'];
-const TITULOS = { hoje: 'Hoje', rotina: 'Rotina', pendencias: 'Pendências', treinos: 'Treinos', perfil: 'Perfil' };
+const ORDEM = ['hoje', 'tarefas', 'treinos', 'pet', 'perfil'];
+const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treinos', pet: 'Pet', perfil: 'Perfil' };
+
+// Atalhos antigos continuam funcionando:
+//   'rotina' e 'pendencias' agora são seções da aba Tarefas;
+//   loja, personagem e coleção agora ficam na aba Pet.
+const ATALHOS = {
+  rotina: ['tarefas', { sub: 'rotina' }],
+  pendencias: ['tarefas', { sub: 'pendencias' }],
+};
+const SECOES_DO_PET = ['loja', 'personagem', 'colecao', 'cuidar'];
 
 const abas = {};
 let atual = null;
@@ -26,6 +35,8 @@ export function registrarAba(nome, modulo) {
 
 /** Vai para uma aba (params opcionais, ex.: { filtro: 'hoje' }). */
 export function irPara(nome, params = {}) {
+  if (ATALHOS[nome]) return irPara(ATALHOS[nome][0], { ...ATALHOS[nome][1], ...params });
+  if (nome === 'perfil' && SECOES_DO_PET.includes(params.secao)) return irPara('pet', params);
   const alvo = abas[nome];
   if (!alvo) return;
   const entrando = atual !== nome;

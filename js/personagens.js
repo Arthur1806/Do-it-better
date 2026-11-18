@@ -114,7 +114,7 @@ function gradePet(p, est) {
     // manchas de sujeira em posições fixas
     for (let y = 0; y < 12; y++) for (let x = 0; x < 14; x++) if (g[y][x] !== '.' && g[y][x] !== 'E' && (x * 7 + y * 13) % 9 === 0) g[y][x] = 'm';
   }
-  if (est && (est.fraco || est.dormindo)) {
+  if (est && (est.fraco || est.dormindo || est.faminto)) {
     // olhos semicerrados: o pixel de cima do olho vira pálpebra
     for (let y = 0; y < 11; y++) for (let x = 0; x < 14; x++) if (g[y][x] === 'E' && g[y + 1][x] === 'E') g[y][x] = 'A';
   }
@@ -153,6 +153,7 @@ export function avatarHTML(p = companheiro(), { tam = 'm', nivel = nivelInfo().n
     ${est && est.sujo ? '<span class="pet-moscas" aria-hidden="true"><i></i><i></i></span>' : ''}
     ${est && est.triste ? '<span class="pet-lagrima" aria-hidden="true"></span>' : ''}
     ${est && est.dormindo ? '<span class="pet-zzz" aria-hidden="true">z</span>' : ''}
+    ${est && (est.faminto || est.sede) ? `<span class="pet-pede" aria-hidden="true">${est.faminto ? '🍖' : ''}${est.sede ? '💧' : ''}</span>` : ''}
   </span>`;
 }
 
@@ -224,6 +225,8 @@ const FALAS = {
   ],
   sonolento: ['Zzz... ainda é cedo, mas eu topo começar! 😴', 'Madrugada? Que disciplina! 🌙'],
   // estados de cuidado (têm prioridade)
+  faminto: ['Tô com fome... compra uma ração pra mim? 🍖', 'Minha barriga tá roncando! 🥺', 'Sem moedas não tem comida... bora cumprir a rotina?'],
+  sede: ['Tô com sede... me dá água? 💧', 'Uma aguinha cairia bem agora! 💧'],
   sujo: ['Tô todo sujinho... me dá um banho? 🛁', 'Eca, tô cheio de lama! Cumpre um hábito e me dá banho?'],
   fraco: ['Tô fraquinho... cada hábito que você cumpre me dá força. 🥺', 'Faz um tempo que a gente não treina a disciplina... me ajuda?'],
   triste: ['Senti sua falta... um carinho resolveria. 💔', 'Tô meio triste. Brinca comigo?'],
@@ -233,7 +236,7 @@ const FALAS = {
 export function fala(variacao = 0) {
   const d = dados();
   const est = estadoPet();
-  const chave = est.fraco ? 'fraco' : est.sujo ? 'sujo' : est.triste ? 'triste' : humor();
+  const chave = est.faminto ? 'faminto' : est.sede ? 'sede' : est.fraco ? 'fraco' : est.sujo ? 'sujo' : est.triste ? 'triste' : humor();
   const lista = FALAS[chave];
   const rnd = aleatorioComSemente(hojeKey() + chave + variacao);
   const r = resumoRotina(hojeKey());

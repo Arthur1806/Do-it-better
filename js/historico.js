@@ -272,5 +272,5 @@ export function textoHorario(limite) {
     if (f.falta <= 60) return `⏰ faltam ${f.falta} min (até ${limite})`;
     return `⏰ até ${limite}`;
   }
-  return `⚠️ atrasado · agora vale ${f.pct}%`;
+  return `⚠️ atrasado · vale ${f.pct}%`;
 }

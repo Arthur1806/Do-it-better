@@ -11,19 +11,21 @@ import { fecharDias, atualizarMelhoresSequencias, resumoRotina } from './histori
 import { recalcularXP } from './xp.js';
 import { verificarConquistas } from './conquistas.js';
 import { verificarPersonagens, companheiro, estagioDoNivel, novosNaColecao, avatarHTML } from './personagens.js';
-import { verificarVisual, avatarSVG } from './visual.js';
+import { verificarVisual, avatarSVG, fisicoAtual, personagemHTML } from './visual.js';
 import { abrirEditorPersonagem, celebrarVisual } from './telas-personagem.js';
-import { estadoPet } from './pet.js';
+import { estadoPet, atualizarPet } from './pet.js';
 import { atualizarLiga, missoesParaResgatar, bauDisponivel } from './missoes.js';
 import { aplicarTemaCor } from './loja.js';
 import { abrirOnboarding } from './onboarding.js';
-import { registrarAba, irPara, renderizarAtual, ligarGestos } from './nav.js';
+import { registrarAba, irPara, renderizarAtual, ligarGestos, abaAtual } from './nav.js';
 import { abrirSheet, toast, flutuarXP, celebrar, vibrar } from './ui.js';
 import { tocar } from './sons.js';
 import * as painel from './painel.js';
 import * as rotina from './rotina.js';
 import * as pendencias from './pendencias.js';
+import * as tarefas from './tarefas.js';
 import * as treinos from './treinos.js';
+import * as petaba from './petaba.js';
 import * as perfil from './perfil.js';
 import { abrirNotas } from './extras.js';
 import { contagens } from './pendencias.js';
@@ -33,6 +35,7 @@ Store.carregar();
 const d = Store.dados();
 recalcularXP(); // garante a integridade do total de XP
 fecharDias(); // fecha os dias que passaram desde a última abertura (e usa escudos)
+atualizarPet(); // fome e sede andam com o relógio, mesmo com o app fechado
 painel.sincronizarBlocos();
 atualizarMelhoresSequencias();
 // Na abertura não celebramos o que já existia: só registramos.
@@ -71,6 +74,7 @@ on('xp-removido', (l) => {
   if (pronto) tocar('desfazer');
   combo = 0;
 });
+let fisicoVisto = fisicoAtual().n;
 on('nivel', (info) => {
   if (!pronto) return;
   tocar('fanfarra');
@@ -81,6 +85,12 @@ on('nivel', (info) => {
   if (depois.estagio > antes.estagio) {
     celebrar({ emoji: avatarHTML(p, { tam: 'g', nivel: info.nivel, estado: false }), titulo: `${p.nome} evoluiu!`, subtitulo: `Agora é ${depois.nome}. Vocês estão ficando lendários juntos! ✨` });
   }
+  // o seu personagem também fica mais forte
+  const f = fisicoAtual();
+  if (f.n > fisicoVisto) {
+    celebrar({ emoji: `<span class="celebra-personagem">${personagemHTML(d.avatar, { fisico: f.n })}</span>`, titulo: `Você ficou ${f.nome}!`, subtitulo: `${f.desc} Veja na aba Pet → Personagem.` });
+  }
+  fisicoVisto = f.n;
 });
 on('conquista', (c) => {
   if (!pronto) return;
@@ -91,7 +101,7 @@ on('conquista', (c) => {
 on('personagem', (p) => {
   if (!pronto) return;
   tocar('fanfarra');
-  celebrar({ emoji: avatarHTML(p, { tam: 'g', estado: false }), titulo: 'Novo pet desbloqueado!', subtitulo: `${p.especie} entrou para a sua coleção. Adote em Perfil → Personagem.` });
+  celebrar({ emoji: avatarHTML(p, { tam: 'g', estado: false }), titulo: 'Novo pet desbloqueado!', subtitulo: `${p.especie} entrou para a sua coleção. Adote na aba Pet → Coleção.` });
 });
 on('visual', (x) => {
   if (!pronto) return;
@@ -133,9 +143,9 @@ document.addEventListener('focusout', () => setTimeout(() => {
 
 // ---------- 3. Abas ----------
 registrarAba('hoje', painel);
-registrarAba('rotina', rotina);
-registrarAba('pendencias', pendencias);
+registrarAba('tarefas', tarefas);
 registrarAba('treinos', treinos);
+registrarAba('pet', petaba);
 registrarAba('perfil', perfil);
 ligarGestos();
 
@@ -159,10 +169,11 @@ document.addEventListener('dib-redesenhar', () => {
   renderizarAtual();
   atualizarBadges();
 });
+document.addEventListener('dib-redesenhar-badges', () => atualizarBadges());
 
-// Botão "+" some na aba Perfil
+// Botão "+" só aparece onde se cria coisa (Hoje, Tarefas e Treinos)
 document.addEventListener('dib-aba', (e) => {
-  document.getElementById('fab').classList.toggle('escondido', e.detail === 'perfil');
+  document.getElementById('fab').classList.toggle('escondido', e.detail === 'perfil' || e.detail === 'pet');
   atualizarBadges();
 });
 
@@ -177,21 +188,51 @@ function atualizarBadges() {
     b.textContent = conteudo === true ? '' : conteudo || '';
     b.classList.toggle('visivel', !!conteudo);
     b.classList.toggle('ponto', conteudo === true);
-    b.classList.toggle('alerta', alerta);
+    b.classList.toggle('urgente', alerta);
   };
   const est = d.meta.onboardingFeito ? estadoPet() : {};
-  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 || est.sujo || est.fraco || est.triste ? true : '');
-  marcar('rotina', r.total > r.feitos ? String(r.total - r.feitos) : '');
-  marcar('pendencias', pend ? String(pend) : '', c.atrasadas > 0);
+  const petPrecisa = est.faminto || est.sede || est.sujo || est.fraco || est.triste;
+  const faltam = Math.max(0, r.total - r.feitos) + pend;
+  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 ? true : '');
+  marcar('tarefas', faltam ? String(faltam) : '', c.atrasadas > 0);
   marcar('treinos', d.treinos.emAndamento ? true : '');
-  marcar('perfil', novosNaColecao() + d.visualNovos.length > 0 ? true : '');
+  marcar('pet', petPrecisa || novosNaColecao() + d.visualNovos.length > 0 ? true : '', !!petPrecisa);
+  marcar('perfil', '');
+  // ícone da aba Pet = o seu pet em pixel art
+  const iconePet = document.querySelector('.tabbar [data-aba="pet"] .tab-pet');
+  const p = companheiro();
+  const chavePet = JSON.stringify([p.id, d.pet.skin]);
+  if (iconePet && iconePet.dataset.chave !== chavePet) {
+    iconePet.innerHTML = avatarHTML(p, { tam: 'p', estado: false });
+    iconePet.dataset.chave = chavePet;
+  }
   // ícone da aba Perfil = o seu personagem em pixel art
   const icone = document.querySelector('.tabbar [data-aba="perfil"] .tab-avatar');
-  const chave = JSON.stringify(d.avatar);
+  const chave = JSON.stringify([d.avatar, fisicoAtual().n]);
   if (icone && icone.dataset.chave !== chave) {
     icone.innerHTML = avatarSVG(d.avatar);
     icone.dataset.chave = chave;
   }
+}
+
+/** Quem já usava o app vê uma vez o que mudou na versão 4. */
+function talvezMostrarNovidades() {
+  if (!d.meta.novidadeV4 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return;
+  setTimeout(() => abrirSheet({
+    titulo: 'Novidades ✨',
+    html: `<div class="novidades">
+      <p><b>📋 Plano de hoje:</b> tudo o que é para fazer hoje (rotina, desafios, pendências e treino) numa lista só, em ordem de horário. Toque na caixinha <b>✓</b> para marcar.</p>
+      <p><b>🧭 Abas organizadas:</b> <b>Tarefas</b> junta Rotina e Pendências; <b>Pet</b> junta cuidados, personagem, loja e coleção.</p>
+      <p><b>🍖 Comida e água custam moedas:</b> o pet sente fome e sede com o tempo. Cumpra a rotina e as missões para ganhar moedas — sem moedas, sem comida!</p>
+      <p><b>💪 Evolução física:</b> seu personagem fica mais forte a cada fase, até virar um guerreiro imparável com aura de energia.</p>
+      <button class="btn primario largo" data-fechar>Bora!</button>
+    </div>`,
+    aoMontar(corpo, fechar) {
+      corpo.querySelector('[data-fechar]').addEventListener('click', fechar);
+    },
+  }), 900);
+  d.meta.novidadeV4 = false;
+  Store.salvar({ silencioso: true });
 }
 
 /** Quem já usava o app (ou pulou o questionário) cria o personagem uma vez. */
@@ -212,11 +253,13 @@ function iniciar() {
     Store.salvar({ silencioso: true });
   }
   talvezCriarPersonagem();
+  talvezMostrarNovidades();
 }
 if (!d.meta.onboardingFeito) {
   irPara('hoje');
   abrirOnboarding();
   document.addEventListener('dib-onboarding-fim', () => {
+    d.meta.novidadeV4 = false;
     pronto = true;
     irPara('hoje');
     atualizarBadges();
@@ -229,13 +272,19 @@ if (!d.meta.onboardingFeito) {
 
 // ---------- 4. Botão "+" (adicionar rápido) ----------
 document.getElementById('fab').addEventListener('click', () => {
+  // na aba Tarefas o "+" já cria o que está aberto (rotina ou pendência)
+  if (abaAtual() === 'tarefas') {
+    if (tarefas.subAtual() === 'pendencias') pendencias.abrirFormPendencia();
+    else rotina.abrirFormItem();
+    return;
+  }
   abrirSheet({
     titulo: 'Adicionar',
     html: `<div class="acoes-rapidas">
       <button class="acao-rapida card" data-rapido="pendencia"><span>📌</span><b>Pendência</b><small>Algo para resolver</small></button>
       <button class="acao-rapida card" data-rapido="rotina"><span>🔁</span><b>Item de rotina</b><small>Hábito diário</small></button>
       <button class="acao-rapida card" data-rapido="nota"><span>🗒️</span><b>Nota</b><small>Ideia rápida</small></button>
-      <button class="acao-rapida card" data-rapido="check"><span>✅</span><b>Bloco de check</b><small>Novo bloco no painel</small></button>
+      <button class="acao-rapida card" data-rapido="check"><span>🎯</span><b>Desafio diário</b><small>Check com sequência 🔥</small></button>
     </div>`,
     aoMontar(corpo, fechar) {
       corpo.addEventListener('click', (e) => {
@@ -257,13 +306,19 @@ document.getElementById('fab').addEventListener('click', () => {
 // ---------- 5. Virada do dia (meia-noite) ----------
 let diaAtual = hojeKey();
 function verificarDia() {
+  // fome e sede do pet (a cada minuto ou ao voltar ao app)
+  if (atualizarPet()) {
+    Store.salvar({ silencioso: true });
+    atualizarBadges();
+    if (['hoje', 'pet'].includes(abaAtual())) renderizarAtual();
+  }
   if (hojeKey() === diaAtual) return;
   diaAtual = hojeKey();
   fecharDias();
   Store.salvar(); // redesenha tudo
   toast('Novo dia! Os checks diários foram reiniciados ☀️');
 }
-setInterval(verificarDia, 30000);
+setInterval(verificarDia, 60000);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     verificarDia();

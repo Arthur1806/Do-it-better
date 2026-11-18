@@ -10,10 +10,10 @@ import { hojeKey, uid } from './utils.js';
 /** Blocos fixos do painel, na ordem inicial. */
 export const BLOCOS_FIXOS = [
   { tipo: 'missoes', ativo: true, tamanho: 'g', inicio: true },
-  { tipo: 'rotina', ativo: true, tamanho: 'p' },
-  { tipo: 'check', ref: 'chk-quarto', ativo: true, tamanho: 'p' },
-  { tipo: 'treino', ativo: true, tamanho: 'g' },
-  { tipo: 'pendencias', ativo: true, tamanho: 'p' },
+  { tipo: 'rotina', ativo: false, tamanho: 'p' },
+  { tipo: 'check', ref: 'chk-quarto', ativo: false, tamanho: 'p' },
+  { tipo: 'treino', ativo: false, tamanho: 'g' },
+  { tipo: 'pendencias', ativo: false, tamanho: 'p' },
   { tipo: 'agua', ativo: true, tamanho: 'p' },
   { tipo: 'metaTreinos', ativo: true, tamanho: 'p' },
   { tipo: 'sequencia', ativo: true, tamanho: 'p' },

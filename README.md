@@ -8,6 +8,19 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 4.0
+
+- **📋 Plano de hoje:** a tela Hoje agora mostra numa lista só, em ordem de horário, tudo o que é para fazer no dia — itens da rotina, desafios (checks), pendências com prazo hoje ou atrasadas e o treino. Cada linha tem uma **caixinha grande com ✓** para marcar (as atrasadas ficam em laranja). O que já foi feito desce para "Feitos hoje".
+- **Marcar feito sem confusão:** os blocos de desafio (ex.: Quarto arrumado) têm um botão **"✓ Marcar feito"**; tocar no resto do cartão não marca mais nada sem querer. Rotina e pendências usam a mesma caixinha com ✓.
+- **Abas organizadas:** `Hoje · Tarefas · Treinos · Pet · Perfil`.
+  - **Tarefas** junta Rotina e Pendências (seletor no topo; o "+" cria o tipo aberto).
+  - **Pet** junta Cuidar, Personagem, Loja e Coleção.
+  - **Perfil** fica só com Jornada, Medalhas e Ajustes.
+  - Missões do dia têm uma seção própria na tela Hoje; os blocos do painel ficam abaixo.
+- **🍖 Comida e água custam moedas:** o pet sente fome e sede com o tempo (mesmo com o app fechado). Água 🪙5, ração 🪙12, ração premium 🪙40. Sem rotina → sem moedas → sem comida, e com fome ou sede ele perde força e alegria.
+- **💪 Evolução física do personagem** (pelo nível): Franzino (1) → Treinado (3) → Forte (6) → Guerreiro (10, faixa e pintura de batalha, aura de fogo) → Imparável (20, olhos brilhando e aura de energia).
+- Quem já usava o app vê uma tela de novidades uma vez; os dados são migrados sozinhos (esquema 4).
+
 ## Novidades da versão 3.0
 
 - **Seu personagem em pixel art:** um boneco humano que você monta do seu jeito: tom de pele, cabelo (estilo e cor), roupa, calça, sapato, chapéu/boné e acessório, cada um com cor.
@@ -77,18 +90,20 @@ do-it-better/
     ├── nav.js              ← navegação entre as abas
     ├── ui.js               ← folhas, alertas, toasts, +XP, confete, vibração, arrastar
     ├── graficos.js         ← anel, barras e linha em SVG (sem biblioteca)
-    ├── painel.js           ← aba Hoje (placar + blocos/widgets + blocos de check)
-    ├── rotina.js           ← aba Rotina (checks diários, bônus, calendário)
-    ├── pendencias.js       ← aba Pendências (prazo, prioridade, etiquetas, desfazer)
+    ├── painel.js           ← aba Hoje (placar, Plano de hoje, missões e blocos/widgets)
+    ├── tarefas.js          ← aba Tarefas (seletor Rotina | Pendências)
+    ├── rotina.js           ← lista da Rotina (checks diários, bônus, calendário)
+    ├── pendencias.js       ← lista de Pendências (prazo, prioridade, etiquetas, desfazer)
     ├── treinos.js          ← aba Treinos (fichas, rodízio, Treinando agora, evolução)
     ├── extras.js           ← água, notas rápidas, lista de compras, gastos do mês
-    ├── perfil.js           ← aba Perfil (Jornada, Coleção, Medalhas, Loja, Ajustes)
+    ├── perfil.js           ← aba Perfil (Jornada, Medalhas, Ajustes)
+    ├── petaba.js           ← aba Pet (Cuidar, Personagem, Loja, Coleção)
     ├── onboarding.js       ← questionário de primeira entrada (monta o app para você)
     ├── personagens.js      ← pets (pixel art), skins, evolução, coleção, humor e falas
     ├── pixel.js            ← motor de pixel art em SVG + desenhos do personagem e dos pets
-    ├── visual.js           ← personalização do personagem, raridades e desbloqueios
+    ├── visual.js           ← personalização do personagem, raridades, desbloqueios e evolução física
     ├── visual-padrao.js    ← visual inicial do personagem
-    ├── pet.js              ← necessidades do pet (força, limpeza, alegria) e cuidados
+    ├── pet.js              ← necessidades do pet (comida, água, força, limpeza, alegria) e cuidados
     ├── telas-personagem.js ← criador do personagem, cena personagem + pet, cuidar do pet
     ├── missoes.js          ← missões do dia, baú diário e ligas semanais
     ├── loja.js             ← itens (escudo, poção) e temas de cor
@@ -114,6 +129,8 @@ do-it-better/
 - **Desfazer** sempre remove o XP (e as moedas que ele deu) — não há pontos duplicados.
 - **Escudo de sequência:** se você falhar a rotina num dia e tiver escudo, ele é usado sozinho na virada do dia e a sequência continua (o dia aparece com 🛡️ no calendário).
 - **Moedas:** 1 a cada 10 XP; missões 10–20; baú diário 10–70 (cresce com a presença); medalhas 🥉10 · 🥈25 · 🥇60 · 💎150; carinho no companheiro 5 por dia.
+- **Pet:** comida e água caem com o tempo (a comida dura ~3 dias, a água ~2). Compre na aba **Pet → Cuidar** com moedas (ou use o que tem na mochila).
+- **Físico do personagem:** muda nos níveis 3, 6, 10 e 20.
 - Todos os valores podem ser mudados em **Perfil → Ajustes → Valores de XP**.
 
 ---

@@ -16,7 +16,7 @@ import {
 import { registroDia, lerDia, valeNoDia, resumoRotina, sequenciaRotina, multiplicador, checkFeito, sequenciaCheck, atualizarMelhoresSequencias, itensRotinaDoDia, fatorHorario, xpComHorario, textoHorario } from './historico.js';
 import { ganharXP, removerXP, nivelInfo, xpDoDia } from './xp.js';
 import { alternarItem } from './rotina.js';
-import { contagens, listar, concluir } from './pendencias.js';
+import { contagens, listar, concluir, reabrir, xpDaPrioridade, passouDoPrazo } from './pendencias.js';
 import { proximaFicha, treinosNaSemana, iniciarTreino, abrirTreinoAtivo } from './treinos.js';
 import { aguaHoje, adicionarAgua, ultimaNota, abrirNotas, comprasFaltando, abrirCompras, totalGastosMes, abrirGastos } from './extras.js';
 import { anel, barras } from './graficos.js';
@@ -30,7 +30,8 @@ import { BLOCOS_FIXOS } from './seed.js';
 import { companheiro, avatarHTML, humor, fala } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
 import { pocaoAtiva, bonusPocao } from './xp.js';
-import { cenaHTML, barrasPetHTML, abrirEditorPersonagem, abrirCuidarPet } from './telas-personagem.js';
+import { cenaHTML, barrasPetHTML } from './telas-personagem.js';
+import { fisicoAtual } from './visual.js';
 import { estadoPet, bonusPet, cuidar } from './pet.js';
 import { tocar } from './sons.js';
 import { confete, celebrar } from './ui.js';
@@ -70,7 +71,7 @@ export function sincronizarBlocos() {
   }
   for (const c of d.checks) {
     if (!d.painel.some((x) => x.tipo === 'check' && x.ref === c.id)) {
-      d.painel.splice(1, 0, { id: `b-${c.id}`, tipo: 'check', ref: c.id, ativo: true, tamanho: 'p' });
+      d.painel.splice(1, 0, { id: `b-${c.id}`, tipo: 'check', ref: c.id, ativo: false, tamanho: 'p' });
       mudou = true;
     }
   }
@@ -166,7 +167,7 @@ export function abrirFormCheck(c = null) {
           if (novo) {
             const id = uid();
             d.checks.push({ id, chave: '', ...v, criadoEm: hojeKey(), melhorSequencia: 0 });
-            d.painel.unshift({ id: `b-${id}`, tipo: 'check', ref: id, ativo: true, tamanho: 'p' });
+            d.painel.push({ id: `b-${id}`, tipo: 'check', ref: id, ativo: false, tamanho: 'p' });
           } else {
             Object.assign(c, v, { exemplo: false });
           }
@@ -196,19 +197,23 @@ export function abrirFormCheck(c = null) {
 
 const topo = (emoji, nome, extra = '') => `<div class="bloco-topo"><span class="bloco-emoji">${emoji}</span><span class="bloco-nome">${esc(nome)}</span>${extra}</div>`;
 
-const CONTEUDO = {
-  missoes(b, g) {
-    const ms = missoesDoDia();
-    const feitas = ms.filter((m) => m.resgatada).length;
-    return `${topo('🎯', 'Missões do dia', `<span class="bloco-extra">${feitas}/${ms.length}</span>`)}
-      <div class="missoes">${ms.map((m) => `<div class="missao ${m.resgatada ? 'resgatada' : m.completa ? 'pronta' : ''}">
+function missoesListaHTML(ms) {
+  return `<div class="missoes">${ms.map((m) => `<div class="missao ${m.resgatada ? 'resgatada' : m.completa ? 'pronta' : ''}">
           <span class="missao-icone">${m.icone}</span>
           <span class="missao-info"><span class="missao-texto">${esc(m.texto)}</span>
             <span class="missao-barra"><i style="width:${(m.progresso / m.alvo) * 100}%"></i></span></span>
           ${m.resgatada ? `<span class="missao-ok">${ICONE_CHECK}</span>`
             : m.completa ? `<button class="btn-resgatar" data-acao="resgatar" data-item="${m.tipo}">Resgatar</button>`
             : `<span class="missao-premio">+${m.xp}<small> XP</small><br><small>🪙${m.moedas}</small></span>`}
-        </div>`).join('') || '<small class="apagado">Crie hábitos ou pendências para receber missões.</small>'}</div>
+        </div>`).join('') || '<small class="apagado">Crie hábitos ou pendências para receber missões.</small>'}</div>`;
+}
+
+const CONTEUDO = {
+  missoes(b, g) {
+    const ms = missoesDoDia();
+    const feitas = ms.filter((m) => m.resgatada).length;
+    return `${topo('🎯', 'Missões do dia', `<span class="bloco-extra">${feitas}/${ms.length}</span>`)}
+      ${missoesListaHTML(ms)}
       ${ms.length && feitas < ms.length ? `<div class="bloco-rodape">Complete as ${ms.length} e ganhe um <b>baú bônus</b> 🎁</div>` : ms.length ? '<div class="bloco-rodape">Todas resgatadas! Volte amanhã para novas missões ✨</div>' : ''}`;
   },
 
@@ -355,16 +360,22 @@ const CONTEUDO = {
     const vale = valeNoDia(c, hoje);
     const feito = checkFeito(c, hoje);
     const seq = sequenciaCheck(c);
-    let status;
-    if (!vale) status = '<small class="apagado">Folga hoje 😌</small>';
-    else if (feito) status = `<small>Feito às ${formatarHora(feito.ts)}</small>`;
-    else status = `<small class="${c.horaLimite && !fatorHorario(c.horaLimite).noPrazo ? 'texto-atraso' : ''}">${c.horaLimite ? `${xpCheckAgora(c)} XP · ${textoHorario(c.horaLimite).replace(/^⏰ /, '')}` : `${c.xp} XP`}</small>`;
+    const f = fatorHorario(c.horaLimite);
+    let corpo;
+    if (!vale) {
+      corpo = '<div class="check-status apagado">😌 Folga hoje</div>';
+    } else if (feito) {
+      corpo = `<div class="check-feito">${ICONE_CHECK}<span><b>Feito!</b><small>às ${formatarHora(feito.ts)}</small></span></div>
+        <button class="btn-texto pequeno-txt" data-acao="marcar-check" data-item="${c.id}">Desfazer</button>`;
+    } else {
+      const xp = xpCheckAgora(c);
+      const status = !c.horaLimite ? `vale ${xp} XP` : f.noPrazo ? `até ${c.horaLimite} · ${xp} XP` : `⚠️ atrasado · agora ${xp} XP (${f.pct}%)`;
+      corpo = `<div class="check-status ${c.horaLimite && !f.noPrazo ? 'texto-atraso' : ''}">${status}</div>
+        <button class="btn-marcar" data-acao="marcar-check" data-item="${c.id}">${ICONE_CHECK} Marcar feito</button>`;
+    }
     return `${topo(esc(c.emoji || '✅'), c.nome)}
-      <div class="bloco-corpo coluna check-corpo">
-        <div class="check-grande ${feito ? 'on' : ''} ${!vale ? 'desligado' : ''}">${ICONE_CHECK}</div>
-        ${status}
-      </div>
-      <div class="bloco-rodape">${seq ? `🔥 ${plural(seq, 'dia seguido', 'dias seguidos')}` : vale && !feito ? 'Toque para marcar' : 'Comece a sequência!'}</div>`;
+      <div class="bloco-corpo coluna check-corpo">${corpo}</div>
+      <div class="bloco-rodape">${seq ? `🔥 ${plural(seq, 'dia seguido', 'dias seguidos')}` : 'Comece a sequência!'}</div>`;
   },
 };
 
@@ -381,7 +392,7 @@ function acaoBloco(b) {
     case 'gastos': return abrirGastos();
     case 'sequencia': return irPara('rotina');
     case 'semanaXP': return irPara('perfil');
-    case 'check': return alternarCheck(b.ref);
+    case 'check': return; // só o botão "Marcar feito" marca (evita toque sem querer)
     case 'missoes': return;
     case 'liga': return irPara('perfil', { secao: 'jornada' });
   }
@@ -450,11 +461,30 @@ export function montar(el) {
       case 'companheiro':
         tocarCompanheiro(el);
         break;
-      case 'editar-personagem':
-        if (!editando) abrirEditorPersonagem();
+      case 'ir-personagem':
+        if (!editando) irPara('pet', { secao: 'personagem' });
         break;
       case 'cuidar-pet':
-        if (!editando) abrirCuidarPet();
+        if (!editando) irPara('pet', { secao: 'cuidar' });
+        break;
+      case 'marcar-check':
+        if (!editando) alternarCheck(item);
+        break;
+      case 'plano-marcar':
+        marcarDoPlano(alvo.dataset.tipo, alvo.dataset.id);
+        break;
+      case 'plano-treino':
+        if (dados().treinos.emAndamento) abrirTreinoAtivo();
+        else iniciarTreino(alvo.dataset.id);
+        break;
+      case 'ir-pendencias':
+        irPara('pendencias');
+        break;
+      case 'ir-treinos':
+        irPara('treinos');
+        break;
+      case 'novo-item':
+        document.getElementById('fab').click();
         break;
       case 'bau':
         abrirBauAnimado();
@@ -466,10 +496,97 @@ export function montar(el) {
         if (!editando) resgatar(item);
         break;
       case 'ir-loja':
-        irPara('perfil', { secao: 'loja' });
+        irPara('pet', { secao: 'loja' });
         break;
     }
   });
+}
+
+/** Tudo o que é para fazer hoje, numa lista só, em ordem de horário. */
+function itensDoPlano() {
+  const d = dados();
+  const hoje = hojeKey();
+  const reg = lerDia(hoje);
+  const itens = [];
+  for (const i of itensRotinaDoDia(hoje)) {
+    const marca = reg && reg.rotina[i.id];
+    itens.push({ tipo: 'rotina', id: i.id, emoji: i.emoji || '✅', nome: i.nome, horario: i.horario || null, feito: !!marca, marca, xp: xpComHorario(i.xp, i.horario), base: i.xp });
+  }
+  for (const c of d.checks) {
+    if (!valeNoDia(c, hoje)) continue;
+    const marca = checkFeito(c, hoje);
+    itens.push({ tipo: 'check', id: c.id, emoji: c.emoji || '✅', nome: c.nome, horario: c.horaLimite || null, feito: !!marca, marca, xp: xpComHorario(c.xp, c.horaLimite), base: c.xp });
+  }
+  for (const p of d.pendencias) {
+    const aberta = !p.concluidaEm && p.prazo && p.prazo <= hoje;
+    const feitaHoje = p.concluidaEm && p.concluidaDia === hoje;
+    if (!aberta && !feitaHoje) continue;
+    itens.push({ tipo: 'pend', id: p.id, emoji: '📌', nome: p.titulo, horario: p.prazo === hoje ? p.hora || null : null, feito: !!feitaHoje, atrasadaDias: p.prazo < hoje, vencida: passouDoPrazo(p, hoje), prioridade: p.prioridade, xp: feitaHoje ? p.xpGanho : null });
+  }
+  const t = d.treinos;
+  const treinouHoje = t.sessoes.some((x) => x.dia === hoje);
+  const semana = treinosNaSemana().length;
+  const prox = proximaFicha();
+  if (t.fichas.length && (treinouHoje || t.emAndamento || semana < d.ajustes.metaTreinosSemana)) {
+    itens.push({ tipo: 'treino', id: prox ? prox.id : '', emoji: '🏋️', nome: t.emAndamento ? `${t.emAndamento.fichaNome} (em andamento)` : prox ? prox.nome : 'Treino', horario: null, feito: treinouHoje && !t.emAndamento, xp: d.ajustes.xp.treino, andamento: !!t.emAndamento });
+  }
+  // atrasadas primeiro, depois por horário (sem horário vai para o fim)
+  const ordem = (a, b) => (b.atrasadaDias ? 1 : 0) - (a.atrasadaDias ? 1 : 0) || (a.horario || '99:99').localeCompare(b.horario || '99:99');
+  return { pendentes: itens.filter((x) => !x.feito).sort(ordem), feitos: itens.filter((x) => x.feito) };
+}
+
+const TIPO_ROTULO = { rotina: 'Rotina', check: 'Desafio', pend: 'Pendência', treino: 'Treino' };
+
+function linhaPlano(x) {
+  const f = x.horario && x.tipo !== 'pend' ? fatorHorario(x.horario) : null;
+  const atrasado = !x.feito && ((f && !f.noPrazo) || x.vencida);
+  let status = '';
+  if (x.feito) {
+    if (x.marca && x.marca.fator !== undefined && x.marca.fator < 1) status = `feito com atraso · ${Math.round(x.marca.fator * 100)}% do XP`;
+    else status = x.tipo === 'treino' ? 'treino feito hoje 💪' : 'feito ✓';
+  } else if (x.tipo === 'treino') status = x.andamento ? 'continuar' : 'começar agora';
+  else if (x.tipo === 'pend') status = x.vencida ? 'atrasada · ½ XP' : x.horario ? `prazo até ${x.horario}` : 'prazo: hoje';
+  else if (x.horario) status = f.noPrazo ? (f.falta <= 60 ? `faltam ${f.falta} min` : `até ${x.horario}`) : `atrasado · ${f.pct}%`;
+  else status = 'qualquer hora';
+  const xp = x.tipo === 'pend' && !x.feito ? xpDaPrioridade(x.prioridade) : x.xp;
+  const acao = x.tipo === 'treino' ? 'plano-treino' : 'plano-marcar';
+  return `<div class="plano-item ${x.feito ? 'feito' : ''} ${atrasado ? 'atrasado' : ''} tipo-${x.tipo}">
+    <span class="plano-hora">${x.horario || (x.atrasadaDias && !x.feito ? '⚠️' : '—')}</span>
+    ${x.tipo === 'treino' && !x.feito
+      ? `<button class="marcar play" data-acao="${acao}" data-id="${x.id}" aria-label="${x.andamento ? 'Continuar' : 'Começar'} treino">▶</button>`
+      : `<button class="marcar ${x.feito ? 'on' : ''}" data-acao="${acao}" data-tipo="${x.tipo}" data-id="${x.id}" aria-label="${x.feito ? 'Desmarcar' : 'Marcar como feito'}: ${esc(x.nome)}">${ICONE_CHECK}</button>`}
+    <button class="plano-info" data-acao="${acao}" data-tipo="${x.tipo}" data-id="${x.id}">
+      <span class="plano-nome">${esc(x.emoji)} ${esc(x.nome)}</span>
+      <span class="plano-sub"><i class="tipo-tag tipo-${x.tipo}">${TIPO_ROTULO[x.tipo]}</i>${esc(status)}</span>
+    </button>
+    ${xp && !x.feito ? `<span class="xp-badge ${atrasado ? 'reduzido' : ''}">+${x.tipo === 'pend' && x.vencida ? Math.round(xp / 2) : xp}</span>` : ''}
+  </div>`;
+}
+
+function planoHTML() {
+  const d = dados();
+  const { pendentes, feitos } = itensDoPlano();
+  const total = pendentes.length + feitos.length;
+  const r = resumoRotina(hojeKey());
+  const reg = lerDia(hojeKey());
+  return `<section class="card plano">
+    <header class="plano-topo">
+      <div>
+        <h2>📋 Plano de hoje</h2>
+        <small>${total ? `${feitos.length} de ${total} feitos` : 'nada agendado'}${r.total && !(reg && reg.bonusRotina) ? ` · rotina 100% = +${d.ajustes.xp.rotinaBonus} XP` : r.total ? ' · bônus da rotina garantido 🎉' : ''}</small>
+      </div>
+      ${anel(total ? feitos.length / total : 0, { tam: 48, esp: 6, html: `<small>${total ? Math.round((feitos.length / total) * 100) : 0}%</small>` })}
+    </header>
+    ${pendentes.length ? `<div class="plano-lista">${pendentes.map(linhaPlano).join('')}</div>`
+      : total ? '<div class="plano-vazio">🎉 Tudo feito por hoje! Seu pet agradece.</div>'
+      : `<div class="plano-vazio">Nada para hoje ainda. <button class="btn-texto" data-acao="novo-item">${ICONE_MAIS} Adicionar</button></div>`}
+    ${feitos.length ? `<details class="plano-feitos"><summary>✓ Feitos hoje (${feitos.length})</summary><div class="plano-lista">${feitos.map(linhaPlano).join('')}</div></details>` : ''}
+    <div class="plano-links">
+      <button class="btn-texto" data-acao="ir-rotina">🔁 Rotina</button>
+      <button class="btn-texto" data-acao="ir-pendencias">📌 Pendências</button>
+      <button class="btn-texto" data-acao="ir-treinos">🏋️ Treinos</button>
+    </div>
+  </section>`;
 }
 
 export function render(el, params = {}) {
@@ -480,7 +597,8 @@ export function render(el, params = {}) {
   const pct = Math.round(info.progresso * 100);
   const xpHoje = xpDoDia(hoje);
   const mult = multiplicador();
-  const blocos = d.painel.filter((b) => editando || b.ativo);
+  // missões têm seção própria; o resto fica no painel
+  const blocos = d.painel.filter((b) => b.tipo !== 'missoes' && (editando || b.ativo));
   const pctInicial = ultimoPctXP === null ? pct : ultimoPctXP;
 
   const blocoHTML = (b) => {
@@ -504,20 +622,44 @@ export function render(el, params = {}) {
 
   const nome = d.ajustes.nome ? `, ${esc(d.ajustes.nome)}` : '';
   const p = companheiro();
-  const hu = humor();
   const r = resumoRotina(hoje);
   const seqOntem = sequenciaRotina(true);
   const h = new Date().getHours();
   const emRisco = h >= 17 && r.total > 0 && r.feitos < r.total && seqOntem > 0;
   const pocao = pocaoAtiva();
   const estPet = estadoPet();
+  const fis = fisicoAtual();
+  const ms = missoesDoDia();
+  const msFeitas = ms.filter((m) => m.resgatada).length;
+
+  // um aviso de cada vez (o mais importante primeiro)
+  let aviso = '';
+  if (estPet.faminto || estPet.sede || estPet.fraco || estPet.sujo || estPet.triste) {
+    const falta = [];
+    if (estPet.faminto) falta.push('com fome');
+    if (estPet.sede) falta.push('com sede');
+    if (estPet.fraco) falta.push('fraco');
+    if (estPet.sujo) falta.push('sujo');
+    if (estPet.triste && !falta.length) falta.push('triste');
+    const semMoedas = (estPet.faminto || estPet.sede) && d.carteira.moedas < 5;
+    aviso = `<button class="banner banner-pet" data-acao="cuidar-pet">
+        <span class="banner-pet-img">${avatarHTML(p, { tam: 'p' })}</span>
+        <span class="banner-texto"><b>${esc(p.nome)} está ${falta.join(', ')}!</b><small>${semMoedas ? 'Você está sem moedas: cumpra a rotina e as missões para comprar comida.' : 'Toque para cuidar dele agora.'}</small></span>
+        <span class="banner-cta">Cuidar</span>
+      </button>`;
+  } else if (emRisco) {
+    aviso = `<button class="banner banner-risco" data-acao="ir-rotina">
+        <span class="banner-emoji pulsa">🔥</span>
+        <span class="banner-texto"><b>Sequência de ${seqOntem} dias em risco!</b><small>Faltam ${r.total - r.feitos} hábito(s) hoje.${d.carteira.escudos ? ' Você tem 🛡️, mas não desperdice!' : ''}</small></span>
+        <span class="banner-cta">Ir</span>
+      </button>`;
+  }
 
   el.innerHTML = `
     <header class="topo-hoje">
       <div class="logo">Do It Better</div>
       <div class="topo-acoes">
         <button class="pilula-moedas" data-acao="ir-loja" aria-label="${d.carteira.moedas} moedas — abrir loja">🪙 <b>${d.carteira.moedas}</b>${d.carteira.escudos ? `<span class="pilula-escudo">🛡️${d.carteira.escudos}</span>` : ''}</button>
-        <button class="btn-icone ${editando ? 'ativo' : ''}" data-acao="editar-painel" aria-label="${editando ? 'Concluir edição' : 'Editar painel'}">${editando ? ICONE_CHECK : ICONE_EDITAR}</button>
       </div>
     </header>
 
@@ -536,7 +678,7 @@ export function render(el, params = {}) {
       <div class="placar-linha" data-acao="ir-perfil">
         <div class="nivel-badge" aria-label="Nível ${info.nivel}"><small>NÍVEL</small><strong>${info.nivel}</strong></div>
         <div class="placar-xp">
-          <div class="placar-titulo"><span>${info.titulo}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +${bonusPocao()}%</span>` : ''}${bonusPet() ? '<span class="tag tag-pet">🐾 +5%</span>' : ''}</div>
+          <div class="placar-titulo"><span>${info.titulo}${fis.n > 1 ? ` · ${fis.nome}` : ''}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +${bonusPocao()}%</span>` : ''}${bonusPet() ? '<span class="tag tag-pet">🐾 +5%</span>' : ''}</div>
           <div class="barra-xp"><div class="barra-xp-fill" style="width:${pctInicial}%"></div></div>
           <small>${info.xpNoNivel} / ${info.xpParaProximo} XP · faltam ${info.falta}</small>
         </div>
@@ -546,27 +688,28 @@ export function render(el, params = {}) {
 
     ${!editando && bauDisponivel() ? `<button class="banner banner-bau" data-acao="bau">
         <span class="banner-emoji balanca">🎁</span>
-        <span class="banner-texto"><b>Baú diário disponível!</b><small>${d.stats.ultimoCheckin && d.stats.checkinSeq ? `Presença: ${d.stats.checkinSeq} dia(s) seguidos · quanto mais seguido, maior o prêmio` : 'Abra todo dia: prêmios crescem com a sua presença'}</small></span>
+        <span class="banner-texto"><b>Baú diário disponível!</b><small>${d.stats.ultimoCheckin && d.stats.checkinSeq ? `Presença: ${d.stats.checkinSeq} dia(s) seguidos` : 'Abra todo dia: o prêmio cresce com a presença'}</small></span>
         <span class="banner-cta">Abrir</span>
       </button>` : ''}
-    ${!editando && (estPet.fraco || estPet.sujo || estPet.triste) ? `<button class="banner banner-pet" data-acao="cuidar-pet">
-        <span class="banner-pet-img">${avatarHTML(p, { tam: 'p' })}</span>
-        <span class="banner-texto"><b>${esc(p.nome)} precisa de você!</b><small>${estPet.fraco ? 'Está fraco: cumpra hábitos para devolver a força. ' : ''}${estPet.sujo ? 'Está sujo: cumpra 1 hábito e dê um banho. ' : ''}${estPet.triste && !estPet.fraco ? 'Está tristinho: faça um carinho.' : ''}</small></span>
-        <span class="banner-cta">Cuidar</span>
-      </button>` : ''}
-    ${!editando && emRisco ? `<button class="banner banner-risco" data-acao="ir-rotina">
-        <span class="banner-emoji pulsa">🔥</span>
-        <span class="banner-texto"><b>Sua sequência de ${seqOntem} dias está em risco!</b><small>Faltam ${r.total - r.feitos} hábito(s) hoje.${d.carteira.escudos ? ' Você tem 🛡️, mas não desperdice!' : ' Sem escudo para te salvar.'}</small></span>
-        <span class="banner-cta">Ir</span>
-      </button>` : ''}
+    ${!editando ? aviso : ''}
 
+    ${!editando ? planoHTML() : ''}
+
+    ${!editando && ms.length ? `<section class="card secao-missoes">
+      <header class="plano-topo"><div><h2>🎯 Missões do dia</h2><small>${msFeitas}/${ms.length} resgatadas · todas = baú bônus 🎁</small></div></header>
+      ${missoesListaHTML(ms)}
+    </section>` : ''}
+
+    <div class="secao-cab painel-cab">
+      <h2 class="secao-titulo">🧩 Painel</h2>
+      <button class="btn-texto" data-acao="editar-painel">${editando ? '✓ Concluir' : '✏️ Editar'}</button>
+    </div>
     ${editando ? `<div class="painel-dica card">
-        <p>Arraste pela alça <b>⋮⋮</b> para mudar a ordem. <b>P/G</b> muda o tamanho e o olho mostra/oculta.</p>
-        <button class="btn secundario largo" data-acao="novo-check">${ICONE_MAIS} Novo bloco de check</button>
+        <p>Arraste pela alça <b>⋮⋮</b> para mudar a ordem. <b>P/G</b> muda o tamanho e o olho mostra/oculta. Rotina, pendências e desafios já aparecem no Plano de hoje — os blocos deles são opcionais.</p>
+        <button class="btn secundario largo" data-acao="novo-check">${ICONE_MAIS} Novo desafio (bloco de check)</button>
       </div>` : ''}
-
     <section class="grade-blocos ${editando ? 'editando' : ''} ${params.entrando ? 'animar' : ''}" id="grade-blocos">
-      ${blocos.length ? blocos.map(blocoHTML).join('') : `<div class="g-span">${vazioHTML('🧩', 'Painel vazio', 'Toque em "Editar painel" para escolher os blocos que quer ver aqui.')}</div>`}
+      ${blocos.length ? blocos.map(blocoHTML).join('') : `<div class="g-span">${vazioHTML('🧩', 'Painel vazio', 'Toque em "Editar" para escolher os blocos que quer ver aqui.')}</div>`}
     </section>
   `;
 
@@ -581,7 +724,10 @@ export function render(el, params = {}) {
     tornarOrdenavel(el.querySelector('#grade-blocos'), {
       itens: '.bloco',
       alca: '.alca',
-      aoSoltar: (ids) => alterar(() => (dados().painel = reordenarPorIds(dados().painel, ids))),
+      aoSoltar: (ids) => alterar(() => {
+        const missoes = dados().painel.filter((b) => b.tipo === 'missoes');
+        dados().painel = [...missoes, ...reordenarPorIds(dados().painel.filter((b) => b.tipo !== 'missoes'), ids)];
+      }),
     });
   }
 }
@@ -589,6 +735,18 @@ export function render(el, params = {}) {
 // -------------------------------------------------------------
 // Companheiro, baú e missões
 // -------------------------------------------------------------
+
+/** Marca/desmarca um item do Plano de hoje. */
+function marcarDoPlano(tipo, id) {
+  if (tipo === 'rotina') return alternarItem(id);
+  if (tipo === 'check') return alternarCheck(id);
+  if (tipo === 'pend') {
+    const p = dados().pendencias.find((x) => x.id === id);
+    if (!p) return;
+    if (p.concluidaEm) return reabrir(id);
+    return concluir(id);
+  }
+}
 
 /** Tocar no balão: nova fala do pet e (1x por dia) um carinho que dá moedas. */
 function tocarCompanheiro(el) {

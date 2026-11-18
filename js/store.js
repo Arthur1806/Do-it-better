@@ -16,7 +16,7 @@ import { hojeKey } from './utils.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
 
 /** Versão atual do formato dos dados. Aumente ao criar uma migração. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 /** Chave usada no localStorage. */
 const CHAVE = 'doitbetter:dados';
@@ -51,6 +51,9 @@ export function estadoPadrao() {
       forca: 85,
       limpeza: 85,
       alegria: 85,
+      comida: 85,
+      agua: 85,
+      atualizadoEm: null, // para calcular fome e sede pelo tempo
       diasSemCuidado: 0,
     },
     // Perfil do jogador (preenchido no questionário de primeira entrada)
@@ -67,7 +70,7 @@ export function estadoPadrao() {
       boostAte: 0, // poção de XP ativa até este timestamp
       boostPct: 50, // força da poção ativa (%)
       ampulhetaDia: null, // dia em que a ampulheta (+1h nos horários) está ativa
-      inventario: { petisco: 1, racao: 0, brinquedo: 0, sabonete: 1, kit: 0, ampulheta: 0, bauMisterioso: 0 },
+      inventario: { comida: 3, agua: 3, petisco: 1, racao: 0, brinquedo: 0, sabonete: 1, kit: 0, ampulheta: 0, bauMisterioso: 0 },
     },
     colecao: {}, // { idPersonagem: timestampDoDesbloqueio }
     colecaoVista: [], // personagens já vistos (para o aviso de "novo")
@@ -190,6 +193,25 @@ const MIGRACOES = {
     d.meta = d.meta || {};
     d.meta.avatarCriado = false; // o app abre o criador de personagem uma vez
     d.meta.novidadeV3 = true; // mostra a explicação da novidade no criador
+    return d;
+  },
+
+  // 4: comida e água do pet (compradas com moedas) e tela Hoje reorganizada.
+  4: (d) => {
+    if (d.pet) {
+      d.pet.comida = 85;
+      d.pet.agua = 85;
+      d.pet.atualizadoEm = Date.now();
+    }
+    if (d.carteira) {
+      d.carteira.inventario = d.carteira.inventario || {};
+      d.carteira.inventario.comida = (d.carteira.inventario.comida || 0) + 3;
+      d.carteira.inventario.agua = (d.carteira.inventario.agua || 0) + 3;
+    }
+    // o que é do dia agora fica no "Plano de hoje": esses blocos saem do painel
+    for (const b of d.painel || []) if (['rotina', 'check', 'pendencias', 'treino'].includes(b.tipo)) b.ativo = false;
+    d.meta = d.meta || {};
+    d.meta.novidadeV4 = true;
     return d;
   },
 };

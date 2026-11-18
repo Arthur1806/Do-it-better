@@ -634,11 +634,7 @@ export function montarPainel(focos, checks) {
   const b = (tipo, tamanho, ativo = true, ref) => ({ id: ref ? `b-${ref}` : `b-${tipo}`, tipo, ref, ativo, tamanho });
   return [
     b('missoes', 'g'),
-    b('rotina', 'p'),
-    ...checks.map((c) => b('check', 'p', true, c.id)),
     b('sequencia', 'p'),
-    b('treino', 'g', tem('treino')),
-    b('pendencias', 'p'),
     b('liga', 'p'),
     b('agua', 'p', tem('saude') || tem('treino') || focos.length < 3),
     b('metaTreinos', 'p', tem('treino')),
@@ -646,6 +642,11 @@ export function montarPainel(focos, checks) {
     b('notas', 'p', tem('estudos') || tem('trabalho') || tem('mente')),
     b('compras', 'p', tem('casa')),
     b('gastos', 'g', tem('financas')),
+    // o que é do dia aparece no "Plano de hoje"; estes ficam disponíveis no Editar painel
+    b('rotina', 'p', false),
+    ...checks.map((c) => b('check', 'p', false, c.id)),
+    b('treino', 'g', false),
+    b('pendencias', 'p', false),
   ];
 }
 
@@ -708,7 +709,7 @@ function concluir() {
     // Painel montado para você (checks antigos que não foram escolhidos continuam, no fim)
     const outrosChecks = d.checks.filter((c) => !novosChecks.includes(c));
     d.painel = montarPainel(r.focos, novosChecks);
-    for (const c of outrosChecks) d.painel.push({ id: `b-${c.id}`, tipo: 'check', ref: c.id, ativo: true, tamanho: 'p' });
+    for (const c of outrosChecks) d.painel.push({ id: `b-${c.id}`, tipo: 'check', ref: c.id, ativo: false, tamanho: 'p' });
 
     d.meta.onboardingFeito = true;
     d.meta.exemplosCriados = true;

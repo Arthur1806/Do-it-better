@@ -275,11 +275,105 @@ function paletaDe(cfg) {
     j: '#3a4256',
     U: '#f97316',
     u: '#fde047',
+    X: '#67e8f9', // olhos brilhando (físico Imparável)
   };
 }
 
+// -------------------------------------------------------------
+// EVOLUÇÃO FÍSICA do personagem (pelo nível do jogador)
+// Começa magrinho e vai ficando mais forte e intimidador.
+// -------------------------------------------------------------
+
+export const FISICOS = [
+  { n: 1, nivel: 1, nome: 'Franzino', desc: 'Começando a jornada. Cada dia cumprido deixa você mais forte.' },
+  { n: 2, nivel: 3, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
+  { n: 3, nivel: 6, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
+  { n: 4, nivel: 10, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, aura de fogo.' },
+  { n: 5, nivel: 20, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+];
+
+export function fisicoDoNivel(nivel) {
+  let f = FISICOS[0];
+  for (const x of FISICOS) if (nivel >= x.nivel) f = x;
+  return f;
+}
+export function fisicoAtual() {
+  return fisicoDoNivel(nivelInfo(dados().xp.total).nivel);
+}
+
+/** Aplica músculos, expressão e brilho do físico na grade. */
+function aplicarFisico(g, n) {
+  const get = (x, y) => (g[y] && g[y][x] !== undefined ? g[y][x] : '.');
+  const set = (x, y, ch) => {
+    if (y >= 0 && y < g.length && x >= 0 && x < 16) g[y][x] = ch;
+  };
+  if (n >= 2) {
+    // bíceps mais largos e sobrancelhas
+    for (const y of [12, 13]) {
+      set(1, y, get(2, y));
+      set(14, y, get(13, y));
+    }
+    if (get(5, 4) === 'S') set(5, 4, 'E');
+    if (get(10, 4) === 'S') set(10, 4, 'E');
+  }
+  if (n >= 3) {
+    // ombros largos, antebraços fortes, pescoço grosso, cara séria
+    set(2, 11, get(3, 11));
+    set(13, 11, get(12, 11));
+    set(1, 14, 'S');
+    set(14, 14, 'S');
+    if (get(5, 10) === '.') set(5, 10, 's');
+    if (get(10, 10) === '.') set(10, 10, 's');
+    // sobrancelhas franzidas (em "V") e olhar estreito: cara de bravo
+    const rosto = (x, y) => ['S', 'E', 'B'].includes(get(x, y));
+    if (rosto(4, 4) && rosto(11, 4)) {
+      set(6, 4, 'S');
+      set(9, 4, 'S');
+      set(4, 4, 'E');
+      set(11, 4, 'E');
+      set(6, 5, 'E');
+      set(9, 5, 'E');
+      set(5, 5, 'S');
+      set(10, 5, 'S');
+    }
+    if (get(7, 8) === 'M') {
+      set(7, 8, 'k');
+      set(8, 8, 'k');
+    }
+  }
+  if (n >= 4) {
+    // corpo de guerreiro e pintura de batalha
+    set(1, 11, get(2, 11));
+    set(14, 11, get(13, 11));
+    for (const y of [15, 16, 17]) {
+      set(2, y, get(3, y));
+      set(13, y, get(12, y));
+    }
+    set(2, 18, 'F');
+    set(13, 18, 'F');
+    // pintura de guerra (2 riscos em cada bochecha) e boca cerrada
+    for (const [x, y] of [[4, 7], [5, 7], [10, 7], [11, 7]]) if (['S', 'B'].includes(get(x, y))) set(x, y, 'R');
+    if (get(6, 8) === 'S' && get(7, 8) === 'k') set(6, 8, 'k');
+    if (get(9, 8) === 'S' && get(8, 8) === 'k') set(9, 8, 'k');
+    // faixa de guerreiro na testa (só se a testa estiver à mostra)
+    let testa = 0;
+    for (let x = 4; x <= 11; x++) if (['S', 'h'].includes(get(x, 3))) testa++;
+    if (testa >= 6) {
+      for (let x = 3; x <= 12; x++) if (['S', 'h', 'H'].includes(get(x, 3))) set(x, 3, 'R');
+      set(13, 3, 'R');
+      set(14, 4, 'R');
+      set(13, 4, 'R');
+    }
+  }
+  if (n >= 5) {
+    // olhos brilhando
+    for (let y = 5; y <= 6; y++) for (let x = 0; x < 16; x++) if (g[y][x] === 'E' && !(y === 5 && (x === 6 || x === 9))) g[y][x] = 'X';
+  }
+  return g;
+}
+
 /** Grade (16x20) do personagem. */
-export function gradeAvatar(cfg = dados().avatar) {
+export function gradeAvatar(cfg = dados().avatar, fisico = fisicoAtual().n) {
   const c = { ...AVATAR_PADRAO, ...cfg };
   const roupa = ROUPAS[c.roupa] || ROUPAS.camiseta;
   const camadas = [];
@@ -290,13 +384,23 @@ export function gradeAvatar(cfg = dados().avatar) {
   camadas.push(CABELOS[c.cabelo] || CABELOS.curto);
   camadas.push(ACESSORIOS[c.acessorio] || ACESSORIOS.nenhum);
   camadas.push(CHAPEUS[c.chapeu] || CHAPEUS.nenhum);
-  return compor(camadas, 16, 20);
+  return aplicarFisico(compor(camadas, 16, 20), fisico);
 }
 
-/** SVG do personagem. */
-export function avatarSVG(cfg = dados().avatar, classe = '') {
+/** SVG do personagem (só o desenho). */
+export function avatarSVG(cfg = dados().avatar, classe = '', { fisico } = {}) {
   const c = { ...AVATAR_PADRAO, ...cfg };
-  return svgDaGrade(gradeAvatar(c), paletaDe(c), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
+  return svgDaGrade(gradeAvatar(c, fisico || fisicoAtual().n), paletaDe(c), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
+}
+
+/** Personagem com a aura do físico (fogo no Guerreiro, energia no Imparável). */
+export function personagemHTML(cfg = dados().avatar, { classe = '', fisico } = {}) {
+  const f = fisico || fisicoAtual().n;
+  return `<span class="personagem fisico-${f}">
+    <span class="aura-guerreiro" aria-hidden="true"></span>
+    ${avatarSVG(cfg, classe, { fisico: f })}
+    ${f >= 4 ? '<span class="faiscas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' : ''}
+  </span>`;
 }
 
 /** Configuração para mostrar a prévia de um item (cabelo aparece sem chapéu). */

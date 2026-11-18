@@ -49,7 +49,7 @@
 .badge.visivel {
   transform: scale(1);
 }
-.badge.alerta {
+.badge.urgente {
   background: var(--vermelho);
 }
 .badge.ponto {

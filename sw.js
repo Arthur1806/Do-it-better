@@ -7,7 +7,7 @@
 // Se criar um arquivo novo, adicione-o também na lista ARQUIVOS.
 // =============================================================
 
-const VERSAO = '3.0.0';
+const VERSAO = '4.0.0';
 const CACHE = `do-it-better-v${VERSAO}`;
 
 // Todos os caminhos são relativos (o site roda em /do-it-better/)
@@ -31,6 +31,8 @@ const ARQUIVOS = [
   './js/painel.js',
   './js/rotina.js',
   './js/pendencias.js',
+  './js/tarefas.js',
+  './js/petaba.js',
   './js/treinos.js',
   './js/extras.js',
   './js/perfil.js',
