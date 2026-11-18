@@ -8,13 +8,14 @@
 
 import { dados, alterar, exportar, importar, apagarTudo, SCHEMA_VERSION, tamanhoKB } from './store.js';
 import { hojeKey, esc, formatarData, formatarDataCurta, formatarDataHora, formatarNumero, formatarHora, lerNumero, DIAS_LETRA, diaSemana, plural } from './utils.js';
-import { nivelInfo, xpUltimosDias, melhorDia, TITULOS, xpParaChegar, pocaoAtiva } from './xp.js';
+import { nivelInfo, xpUltimosDias, melhorDia, TITULOS, xpParaChegar, pocaoAtiva, NIVEL_MAX, PRESTIGIO_MAX, podePrestigio, fazerPrestigio, bonusPrestigio } from './xp.js';
 import { sequenciaRotina, multiplicador } from './historico.js';
 import { SERIES, ESPECIAIS, TIERS, progressoSerie, todasMedalhas } from './conquistas.js';
 import { PERSONAGENS, ESTAGIOS, avatarHTML, companheiro, estagioDoNivel, novosNaColecao, personagem } from './personagens.js';
 import { ligaAtual, ligaSemanaPassada, LIGAS } from './missoes.js';
 import { avatarSVG, fisicoAtual } from './visual.js';
 import { irPara } from './nav.js';
+import * as Nuvem from './nuvem.js';
 import { abrirOnboarding } from './onboarding.js';
 import { limparExemplos } from './seed.js';
 import { anel, barras } from './graficos.js';
@@ -98,6 +99,18 @@ export function montar(el) {
         break;
       case 'niveis':
         mostrarNiveis();
+        break;
+      case 'prestigio':
+        confirmar(`Sua contagem de níveis volta para o 1 e você ganha uma estrela ⭐ (+5% de XP para sempre). Seu XP total, moedas, medalhas e tudo o que já liberou continuam seus. O físico do personagem recomeça a evoluir.`, { titulo: 'Fazer prestígio?', ok: 'Fazer prestígio' }).then((ok) => {
+          if (!ok) return;
+          alterar(() => fazerPrestigio());
+          confete();
+          tocar('fanfarra');
+          toast('⭐ Prestígio! Uma nova jornada começa.');
+        });
+        break;
+      case 'ir-conta':
+        irPara('social', { secao: 'conta' });
         break;
       case 'exportar':
         exportarBackup();
@@ -188,7 +201,9 @@ const SECAO = {
         <h2 class="gradiente-texto">${info.titulo}</h2>
         <p><b>${formatarNumero(info.total)}</b> XP no total</p>
         <div class="barra-xp"><div class="barra-xp-fill" style="width:${Math.round(info.progresso * 100)}%"></div></div>
-        <small>Faltam ${info.falta} XP para o nível ${info.nivel + 1}</small>
+        <small>${info.maximo ? `Nível máximo! ${podePrestigio() ? 'Você pode fazer o prestígio.' : ''}` : `Faltam ${formatarNumero(info.falta)} XP para o nível ${info.nivel + 1}`}</small>
+        ${info.prestigio ? `<p class="estrelas-prestigio" aria-label="${info.prestigio} estrela(s) de prestígio">${'⭐'.repeat(info.prestigio)} <small>+${bonusPrestigio()}% XP</small></p>` : ''}
+        ${podePrestigio() ? `<button class="btn primario" data-acao="prestigio">⭐ Fazer prestígio</button>` : ''}
         <button class="btn-texto" data-acao="niveis">Ver títulos ${ICONE_SETA_DIR}</button>
       </div>
     </section>
@@ -294,9 +309,14 @@ const SECAO = {
       <button class="ajuste clicavel" data-acao="refazer"><span>✨ Refazer personalização</span>${ICONE_SETA_DIR}</button>
     </section>
 
+    <h2 class="secao-titulo">Conta e nuvem</h2>
+    <section class="card ajustes">
+      <button class="ajuste clicavel" data-acao="ir-conta"><span>☁️ ${Nuvem.logado() ? 'Minha conta e sincronização' : 'Criar conta / entrar (salvar na nuvem)'}</span>${ICONE_SETA_DIR}</button>
+    </section>
+
     <h2 class="secao-titulo">Backup</h2>
     <section class="card ajustes">
-      <p class="dica">Seus dados ficam só neste aparelho. Exporte um backup de vez em quando (ex.: salve no app Arquivos ou no iCloud Drive).</p>
+      <p class="dica">${Nuvem.logado() ? 'Seu progresso também fica salvo na nuvem. O backup em arquivo é uma garantia extra.' : 'Sem conta, seus dados ficam só neste aparelho. Exporte um backup de vez em quando (ex.: salve no app Arquivos ou no iCloud Drive).'}</p>
       <button class="ajuste clicavel" data-acao="exportar"><span>📤 Exportar backup (.json)</span>${ICONE_SETA_DIR}</button>
       <button class="ajuste clicavel" data-acao="importar"><span>📥 Importar backup</span>${ICONE_SETA_DIR}</button>
       <input type="file" id="input-importar" class="oculto" aria-hidden="true">
@@ -360,7 +380,7 @@ function mostrarNiveis() {
   const n = nivelInfo().nivel;
   abrirSheet({
     titulo: 'Níveis e títulos',
-    html: `<p class="dica">O nível N precisa de 100 × N XP para passar ao próximo.</p>
+    html: `<p class="dica">Cada nível pede um pouco mais de XP que o anterior. O nível máximo é ${NIVEL_MAX}: chegar lá leva cerca de um ano de dedicação. No ${NIVEL_MAX}, o <b>prestígio</b> recomeça a contagem de níveis e dá uma estrela ⭐ (+5% de XP para sempre, até ${PRESTIGIO_MAX} estrelas). O que você já liberou continua seu.</p>
       <div class="lista card">${TITULOS.map((t, i) => {
         const ate = TITULOS[i + 1] ? TITULOS[i + 1].nivel - 1 : null;
         const atual = n >= t.nivel && (!ate || n <= ate);

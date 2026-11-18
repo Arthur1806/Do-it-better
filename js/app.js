@@ -11,13 +11,15 @@ import { fecharDias, atualizarMelhoresSequencias, resumoRotina } from './histori
 import { recalcularXP } from './xp.js';
 import { verificarConquistas } from './conquistas.js';
 import { verificarPersonagens, companheiro, estagioDoNivel, novosNaColecao, avatarHTML } from './personagens.js';
+import { MUTACOES } from './mutacao.js';
 import { verificarVisual, avatarSVG, fisicoAtual, personagemHTML } from './visual.js';
 import { abrirEditorPersonagem, celebrarVisual } from './telas-personagem.js';
 import { estadoPet, atualizarPet } from './pet.js';
 import { atualizarLiga, missoesParaResgatar, bauDisponivel } from './missoes.js';
+import { desafiosParaResgatar } from './desafios.js';
 import { aplicarTemaCor } from './loja.js';
 import { abrirOnboarding } from './onboarding.js';
-import { registrarAba, irPara, renderizarAtual, ligarGestos, abaAtual } from './nav.js';
+import { registrarAba, irPara, renderizarAtual, abaAtual } from './nav.js';
 import { abrirSheet, toast, flutuarXP, celebrar, vibrar } from './ui.js';
 import { tocar } from './sons.js';
 import * as painel from './painel.js';
@@ -27,6 +29,9 @@ import * as tarefas from './tarefas.js';
 import * as treinos from './treinos.js';
 import * as petaba from './petaba.js';
 import * as perfil from './perfil.js';
+import * as social from './social.js';
+import { iniciarSync } from './sync.js';
+import * as Nuvem from './nuvem.js';
 import { abrirNotas } from './extras.js';
 import { contagens } from './pendencias.js';
 
@@ -79,11 +84,11 @@ on('nivel', (info) => {
   if (!pronto) return;
   tocar('fanfarra');
   const p = companheiro();
-  const antes = estagioDoNivel(info.nivel - 1);
-  const depois = estagioDoNivel(info.nivel);
   celebrar({ emoji: '🚀', titulo: `Nível ${info.nivel}!`, subtitulo: `Você agora é ${info.titulo}. Continue assim!` });
-  if (depois.estagio > antes.estagio) {
-    celebrar({ emoji: avatarHTML(p, { tam: 'g', nivel: info.nivel, estado: false }), titulo: `${p.nome} evoluiu!`, subtitulo: `Agora é ${depois.nome}. Vocês estão ficando lendários juntos! ✨` });
+  // o nível novo pode liberar uma mutação do pet
+  const m = MUTACOES.find((x) => x.nivel === info.nivel);
+  if (m && (d.pet.mutacao || 0) < m.n) {
+    celebrar({ emoji: avatarHTML(p, { tam: 'g', mutacao: m.n, estado: false }), titulo: `Mutação liberada: ${m.nome}!`, subtitulo: `Junte ${m.dna} 🧬 DNA nos desafios semanais e faça ${p.nome} mutar na aba Pet → Cuidar.` });
   }
   // o seu personagem também fica mais forte
   const f = fisicoAtual();
@@ -146,8 +151,19 @@ registrarAba('hoje', painel);
 registrarAba('tarefas', tarefas);
 registrarAba('treinos', treinos);
 registrarAba('pet', petaba);
+registrarAba('social', social);
 registrarAba('perfil', perfil);
-ligarGestos();
+iniciarSync(); // nuvem: só faz algo se a pessoa tiver entrado na conta
+document.addEventListener('dib-ir', (e) => irPara(e.detail.aba, e.detail));
+window.addEventListener('dib-nuvem-baixou', () => {
+  // o progresso veio de outro aparelho: redesenha tudo
+  atualizarBadges();
+  renderizarAtual();
+});
+// avisos de pedidos de amizade (a cada 2 minutos, só logado)
+const checarPedidos = () => Nuvem.logado() && social.atualizarAvisos().then(() => atualizarBadges()).catch(() => {});
+setTimeout(checarPedidos, 2500);
+setInterval(checarPedidos, 120000);
 
 document.getElementById('tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-aba]');
@@ -173,7 +189,7 @@ document.addEventListener('dib-redesenhar-badges', () => atualizarBadges());
 
 // Botão "+" só aparece onde se cria coisa (Hoje, Tarefas e Treinos)
 document.addEventListener('dib-aba', (e) => {
-  document.getElementById('fab').classList.toggle('escondido', e.detail === 'perfil' || e.detail === 'pet');
+  document.getElementById('fab').classList.toggle('escondido', ['perfil', 'pet', 'social'].includes(e.detail));
   atualizarBadges();
 });
 
@@ -193,10 +209,11 @@ function atualizarBadges() {
   const est = d.meta.onboardingFeito ? estadoPet() : {};
   const petPrecisa = est.faminto || est.sede || est.sujo || est.fraco || est.triste;
   const faltam = Math.max(0, r.total - r.feitos) + pend;
-  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 ? true : '');
+  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 || desafiosParaResgatar() > 0 ? true : '');
   marcar('tarefas', faltam ? String(faltam) : '', c.atrasadas > 0);
   marcar('treinos', d.treinos.emAndamento ? true : '');
   marcar('pet', petPrecisa || novosNaColecao() + d.visualNovos.length > 0 ? true : '', !!petPrecisa);
+  marcar('social', social.pedidosRecebidos() ? String(social.pedidosRecebidos()) : '');
   marcar('perfil', '');
   // ícone da aba Pet = o seu pet em pixel art
   const iconePet = document.querySelector('.tabbar [data-aba="pet"] .tab-pet');
@@ -215,8 +232,48 @@ function atualizarBadges() {
   }
 }
 
+/** Avisa (uma vez) quando o pet perdeu um estágio de mutação por fome ou sede. */
+function talvezAvisarPerdaMutacao() {
+  const p = d.pet;
+  if (!pronto || !p || !p.perdeuMutacaoEm || p.avisoPerda === p.perdeuMutacaoEm) return;
+  p.avisoPerda = p.perdeuMutacaoEm;
+  Store.salvar({ silencioso: true });
+  const pet = companheiro();
+  setTimeout(() => celebrar({
+    emoji: avatarHTML(pet, { tam: 'g' }),
+    titulo: `${pet.nome} perdeu a mutação 💔`,
+    subtitulo: `Ele ficou sem comida ou água e voltou a ser ${estagioDoNivel().nome}. Alimente-o e junte DNA 🧬 para mutar de novo (agora pela metade do preço).`,
+    rotulo: 'Vou cuidar dele',
+  }), 1200);
+}
+
+/** Quem já usava o app vê uma vez o que mudou na versão 5. */
+function talvezMostrarNovidadesV5() {
+  if (!d.meta.novidadeV5 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return false;
+  setTimeout(() => abrirSheet({
+    titulo: 'Versão 5: Evolução 🔥',
+    html: `<div class="novidades">
+      <p><b>📈 Jornada mais longa:</b> agora o nível máximo é o 50 — chegar lá leva cerca de um ano. Cada nível pede um pouco mais. Fique tranquilo: <b>você continua no mesmo nível</b> de antes.</p>
+      <p><b>⭐ Prestígio:</b> no nível 50 você pode recomeçar a contagem e ganhar uma estrela (+5% de XP para sempre).</p>
+      <p><b>🎯 Desafios semanais:</b> além dos 3 desafios do dia, toda segunda chegam 4 desafios da semana, mais difíceis e com prêmios maiores — inclusive <b>DNA 🧬</b>.</p>
+      <p><b>🧬 Mutações do pet:</b> com nível e DNA, seu pet muta: <b>Mutante → Fera → Fera Suprema</b>, cada vez maior, mais bravo e pegando fogo. Mas cuidado: se a comida ou a água chegarem a zero, ele perde um estágio!</p>
+      <p><b>🔥 Forma final:</b> no nível 50 o seu personagem vira <b>Lenda em Chamas</b>, com fogo de verdade em volta.</p>
+      <p><b>👕 Personagem redesenhado:</b> boneco maior e com mais detalhes, roupas que aparecem de verdade e peças novas.</p>
+      <button class="btn primario largo" data-fechar>Bora evoluir!</button>
+    </div>`,
+    aoMontar(corpo, fechar) {
+      corpo.querySelector('[data-fechar]').addEventListener('click', fechar);
+    },
+  }), 900);
+  d.meta.novidadeV5 = false;
+  d.meta.novidadeV4 = false;
+  Store.salvar({ silencioso: true });
+  return true;
+}
+
 /** Quem já usava o app vê uma vez o que mudou na versão 4. */
 function talvezMostrarNovidades() {
+  if (talvezMostrarNovidadesV5()) return;
   if (!d.meta.novidadeV4 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return;
   setTimeout(() => abrirSheet({
     titulo: 'Novidades ✨',
@@ -253,17 +310,21 @@ function iniciar() {
     Store.salvar({ silencioso: true });
   }
   talvezCriarPersonagem();
-  talvezMostrarNovidades();
+  if (!social.tratarConviteDoLink()) talvezMostrarNovidades();
+  setTimeout(() => social.talvezVincular(), 1200);
+  talvezAvisarPerdaMutacao();
 }
 if (!d.meta.onboardingFeito) {
   irPara('hoje');
   abrirOnboarding();
   document.addEventListener('dib-onboarding-fim', () => {
     d.meta.novidadeV4 = false;
+    d.meta.novidadeV5 = false;
     pronto = true;
     irPara('hoje');
     atualizarBadges();
     talvezCriarPersonagem();
+    setTimeout(() => social.tratarConviteDoLink(), 1500);
   }, { once: true });
   pronto = true;
 } else {
@@ -311,6 +372,7 @@ function verificarDia() {
     Store.salvar({ silencioso: true });
     atualizarBadges();
     if (['hoje', 'pet'].includes(abaAtual())) renderizarAtual();
+    talvezAvisarPerdaMutacao();
   }
   if (hojeKey() === diaAtual) return;
   diaAtual = hojeKey();

@@ -6,7 +6,7 @@
 // • O contorno escuro é gerado sozinho em volta do desenho.
 // • A saída é um <svg> nítido em qualquer tamanho (crispEdges).
 // Para desenhar algo novo: crie uma grade de strings do mesmo tamanho
-// (16x20 para o personagem, 14x12 para os pets) e use as letras da paleta.
+// (o personagem fica em boneco.js; os pets são 14x12) e use as letras da paleta.
 // =============================================================
 
 const CONTORNO = '#1a1326';
@@ -98,106 +98,7 @@ export function svgDaGrade(grade, paleta, { contorno = CONTORNO, classe = '', ro
   return `<svg class="pixel ${classe}" viewBox="0 0 ${L + 2} ${A + 2}" shape-rendering="crispEdges" role="img" aria-label="${rotulo}" xmlns="http://www.w3.org/2000/svg">${rects}</svg>`;
 }
 
-// =============================================================
-// SPRITES DO PERSONAGEM (grade 16 x 20)
-// Letras: S pele · E olhos · M boca · B bochecha · s sombra da pele
-//         T roupa · t sombra · W branco · G dourado · R vermelho · k preto
-//         P calça · F sapato · H cabelo · Q chapéu · Y ouro · O armação
-//         L lente · Z metal · z metal escuro · V capa · J terno · j terno claro
-//         U fogo · u fogo claro
-// =============================================================
-
-export const CORPO = [
-  '................',
-  '....SSSSSSSS....',
-  '...SSSSSSSSSS...',
-  '...SSSSSSSSSS...',
-  '...SSSSSSSSSS...',
-  '...SSESSSSESS...',
-  '...SSESSSSESS...',
-  '...SBSSSSSSBS...',
-  '...SSSSMMSSSS...',
-  '....SSSSSSSS....',
-  '......ssss......',
-  '...SSSSSSSSSS...',
-  '..SSSSSSSSSSSS..',
-  '..SSSSSSSSSSSS..',
-  '..SSSSSSSSSSSS..',
-  '...SSSSSSSSSS...',
-  '...SSSS..SSSS...',
-  '...SSSS..SSSS...',
-  '...FFFF..FFFF...',
-  '................',
-];
-
-/** Roupas (parte de cima) — y = 11, salvo indicação. */
-export const ROUPAS = {
-  camiseta: { y: 11, linhas: ['...TTTTTTTTTT...', '..TTTTTTTTTTTT..', '..tTTTTTTTTTTt..', '...TTTTTTTTTT...'] },
-  regata: { y: 11, linhas: ['....TTTTTTTT....', '....TTTTTTTT....', '....TTTTTTTT....', '....tTTTTTTt....'] },
-  moletom: { y: 10, linhas: ['....tt....tt....', '...TTTTWWTTTT...', '..TTTTTWWTTTTT..', '..tTTTttttTTTt..', '...TTTttttTTT...'] },
-  social: { y: 11, linhas: ['...TTTWWWWTTT...', '..TTTTTkTTTTTT..', '..tTTTTkTTTTTt..', '...TTTTkTTTTT...'] },
-  listrada: { y: 11, linhas: ['...TTTTTTTTTT...', '..WWWWWWWWWWWW..', '..TTTTTTTTTTTT..', '...WWWWWWWWWW...'] },
-  jaqueta: { y: 10, linhas: ['...tt......tt...', '...TTTTWWTTTT...', '..TTTTTWWTTTTT..', '..tTTTTWWTTTTt..', '...TTTTWWTTTT...'] },
-  atleta: { y: 11, linhas: ['....TTTTTTTT....', '....TTTWWTTT....', '....TTTWWTTT....', '....tTTTTTTt....'] },
-  armadura: { y: 10, linhas: ['...zz......zz...', '..ZZZGZZZZGZZZ..', '..zZZZZGGZZZZz..', '..zZZZZZZZZZZz..', '...ZZZGGGGZZZ...'] },
-  heroi: {
-    y: 11,
-    atras: { y: 11, linhas: ['..VVVVVVVVVVVV..', '.VVVVVVVVVVVVVV.', '.VVVVVVVVVVVVVV.', '.VVVVVVVVVVVVVV.', '.VV..........VV.', '.VV..........VV.', 'VVV..........VVV'] },
-    linhas: ['...TTTTTTTTTT...', '..TTTTTGGTTTTT..', '..tTTTGGGGTTTt..', '...TTTTGGTTTT...'],
-  },
-  terno: { y: 11, linhas: ['...JJJWRRWJJJ...', '..JJJJWRRWJJJJ..', '..jJJJJRRJJJJj..', '...JJJJRRJJJJ...'] },
-};
-
-/** Calças — y = 15. */
-export const CALCAS = {
-  calca: { y: 15, linhas: ['...PPPPPPPPPP...', '...PPPP..PPPP...', '...pPPP..PPPp...'] },
-  shorts: { y: 15, linhas: ['...PPPPPPPPPP...', '...pPPp..pPPp...'] },
-  saia: { y: 15, linhas: ['...PPPPPPPPPP...', '..PPPPPPPPPPPP..'] },
-  jogger: { y: 15, linhas: ['...PPPPPPPPPP...', '...PPPP..PPPP...', '...WWWW..WWWW...'] },
-};
-
-/** Cabelos — y = 0. */
-export const CABELOS = {
-  careca: { linhas: [] },
-  curto: { linhas: ['....HHHHHHHH....', '...HHHHHHHHHH...', '...HHHHHHHHHH...', '...Hh......hH...', '...H........H...'] },
-  espetado: { linhas: ['...H.HH.HH.HH...', '...HHHHHHHHHH...', '..HHHHHHHHHHHH..', '...HhH....HhH...', '...H........H...'] },
-  franja: { linhas: ['....HHHHHHHH....', '...HHHHHHHHHH...', '...HHHHHHHHHH...', '...HHHHHHh..H...', '...HHHh.....H...'] },
-  longo: {
-    linhas: ['....HHHHHHHH....', '...HHHHHHHHHH...', '..HHHHHHHHHHHH..', '..HHh......hHH..', '..HH........HH..', '..HH........HH..', '..HH........HH..', '..HH........HH..', '..Hh........hH..', '..hh........hh..', '..hh........hh..', '..hh........hh..'],
-  },
-  rabo: { linhas: ['....HHHHHHHH....', '...HHHHHHHHHH...', '...HHHHHHHHHHH..', '...Hh......hHHH.', '...H........HHH.', '.............HH.', '.............Hh.', '..............h.'] },
-  coque: { linhas: ['......HHHH......', '...HHHHHHHHHH...', '...HHHHHHHHHH...', '...Hh......hH...'] },
-  cacheado: { linhas: ['...HHHHHHHHHH...', '..HHHHHHHHHHHH..', '.HHHHHHHHHHHHHH.', '.HHHh......hHHH.', '.HHH........HHH.', '.HH..........HH.', '..H..........H..'] },
-  moicano: { linhas: ['......HHHH......', '......HHHH......', '...hhhHHHHhhh...', '...h........h...'] },
-  trancas: {
-    linhas: ['....HHHHHHHH....', '...HHHHHHHHHH...', '...HHHHHHHHHH...', '..HHh......hHH..', '..Hh........hH..', '..hH........Hh..', '..Hh........hH..', '..hH........Hh..', '..Hh........hH..', '..hH........Hh..', '..G..........G..'],
-  },
-  chamas: { fixo: true, linhas: ['..u.U.uU.U.u....', '..UuUUUuUUUuU...', '..UUUUUUUUUUUU..', '...UU......UU...'] },
-};
-
-/** Chapéus — y = 0, salvo indicação. */
-export const CHAPEUS = {
-  nenhum: { linhas: [] },
-  bone: { linhas: ['....QQQQQQQQ....', '...QQQQQQQQQQ...', '...QQQQWWQQQQ...', '..qqqqqqqqqqqq..'] },
-  boneVirado: { linhas: ['....QQQQQQQQ....', '...QQQQQQQQQQ...', '...QQQQQQQQQQ...', '...q........qqq.'] },
-  gorro: { linhas: ['.......WW.......', '....QQQQQQQQ....', '...QQQQQQQQQQ...', '...qqqqqqqqqq...'] },
-  bandana: { y: 2, linhas: ['...QQQQQQQQQQ...', '...QWQQQQWQQQQq.', '.............qq.'] },
-  cowboy: { linhas: ['....QQQQQQQQ....', '....QqQQQQqQ....', '....QQQQQQQQ....', '.qqqqqqqqqqqqqq.'] },
-  cartola: { fixo: true, linhas: ['....kkkkkkkk....', '....kkkkkkkk....', '....RRRRRRRR....', '..kkkkkkkkkkkk..'] },
-  viking: { fixo: true, linhas: ['..W..........W..', '..WW.ZZZZZZ.WW..', '...WZZZZZZZZW...', '...zzGzzGzzGz...'] },
-  coroa: { fixo: true, linhas: ['...Y..Y..Y..Y...', '...YYYYYYYYYY...', '...YRYYYYYYRY...'] },
-  aureola: { fixo: true, linhas: ['....YYYYYYYY....'] },
-};
-
-/** Acessórios do rosto. */
-export const ACESSORIOS = {
-  nenhum: { linhas: [] },
-  oculos: { y: 5, linhas: ['....OEOOOOEO....', '....OEO..OEO....'] },
-  escuros: { y: 5, linhas: ['...OLLLOOLLLO...', '....LLL..LLL....'] },
-  barba: { y: 8, cabelo: true, linhas: ['...HH......HH...', '....HHHHHHHH....', '.....HHHHHH.....'] },
-  bigode: { y: 8, cabelo: true, linhas: ['.....HHHHHH.....'] },
-  fone: { y: 1, linhas: ['....kkkkkkkk....', '...k........k...', '..k..........k..', '..k..........k..', '.RR..........RR.', '.RR..........RR.'] },
-};
+// O PERSONAGEM (24 x 32) fica em boneco.js desde a v5.
 
 // =============================================================
 // SPRITES DOS PETS (grade 14 x 12)

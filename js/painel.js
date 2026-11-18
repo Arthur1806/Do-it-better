@@ -11,7 +11,7 @@
 import { dados, alterar } from './store.js';
 import {
   hojeKey, esc, uid, saudacao, DIAS_LONGOS, DIAS_LETRA, formatarData, formatarMoeda, formatarHora,
-  horaAtual, diasDaSemana, diaSemana, lerNumero, plural, MESES,
+  horaAtual, diasDaSemana, diaSemana, lerNumero, plural, MESES, formatarNumero,
 } from './utils.js';
 import { registroDia, lerDia, valeNoDia, resumoRotina, sequenciaRotina, multiplicador, checkFeito, sequenciaCheck, atualizarMelhoresSequencias, itensRotinaDoDia, fatorHorario, xpComHorario, textoHorario } from './historico.js';
 import { ganharXP, removerXP, nivelInfo, xpDoDia } from './xp.js';
@@ -27,9 +27,10 @@ import {
 } from './ui.js';
 import { irPara } from './nav.js';
 import { BLOCOS_FIXOS } from './seed.js';
-import { companheiro, avatarHTML, humor, fala } from './personagens.js';
+import { companheiro, avatarHTML, humor, fala, estagioDoNivel } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
-import { pocaoAtiva, bonusPocao } from './xp.js';
+import { desafiosDaSemana, resgatarDesafio, diasParaRenovar } from './desafios.js';
+import { pocaoAtiva, bonusPocao, podePrestigio } from './xp.js';
 import { cenaHTML, barrasPetHTML } from './telas-personagem.js';
 import { fisicoAtual } from './visual.js';
 import { estadoPet, bonusPet, cuidar } from './pet.js';
@@ -39,6 +40,7 @@ import { confete, celebrar } from './ui.js';
 let editando = false;
 let ultimoPctXP = null; // para animar a barra de XP enchendo
 let variacaoFala = 0; // muda a fala do companheiro a cada toque
+let abaDesafios = 'dia'; // seção Desafios: 'dia' | 'semana'
 
 /** Nome e emoji de cada tipo de bloco fixo. */
 const TIPOS = {
@@ -197,15 +199,38 @@ export function abrirFormCheck(c = null) {
 
 const topo = (emoji, nome, extra = '') => `<div class="bloco-topo"><span class="bloco-emoji">${emoji}</span><span class="bloco-nome">${esc(nome)}</span>${extra}</div>`;
 
-function missoesListaHTML(ms) {
-  return `<div class="missoes">${ms.map((m) => `<div class="missao ${m.resgatada ? 'resgatada' : m.completa ? 'pronta' : ''}">
+function missoesListaHTML(ms, { acao = 'resgatar', semanal = false } = {}) {
+  return `<div class="missoes ${semanal ? 'semanais' : ''}">${ms.map((m) => `<div class="missao ${m.resgatada ? 'resgatada' : m.completa ? 'pronta' : ''}">
           <span class="missao-icone">${m.icone}</span>
           <span class="missao-info"><span class="missao-texto">${esc(m.texto)}</span>
-            <span class="missao-barra"><i style="width:${(m.progresso / m.alvo) * 100}%"></i></span></span>
+            <span class="missao-barra"><i style="width:${(m.progresso / m.alvo) * 100}%"></i></span>
+            ${semanal && !m.resgatada ? `<small class="missao-conta">${formatarNumero(Math.floor(m.progresso))} / ${formatarNumero(m.alvo)}</small>` : ''}</span>
           ${m.resgatada ? `<span class="missao-ok">${ICONE_CHECK}</span>`
-            : m.completa ? `<button class="btn-resgatar" data-acao="resgatar" data-item="${m.tipo}">Resgatar</button>`
-            : `<span class="missao-premio">+${m.xp}<small> XP</small><br><small>🪙${m.moedas}</small></span>`}
-        </div>`).join('') || '<small class="apagado">Crie hábitos ou pendências para receber missões.</small>'}</div>`;
+            : m.completa ? `<button class="btn-resgatar" data-acao="${acao}" data-item="${m.tipo}">Resgatar</button>`
+            : `<span class="missao-premio">+${m.xp}<small> XP</small><br><small>🪙${m.moedas}${m.dna ? ` · 🧬${m.dna}` : ''}</small></span>`}
+        </div>`).join('') || '<small class="apagado">Crie hábitos ou pendências para receber desafios.</small>'}</div>`;
+}
+
+/** Seção "Desafios" da tela Hoje: diários (missões) e semanais. */
+function desafiosHTML(ms) {
+  const sem = desafiosDaSemana();
+  const fd = ms.filter((m) => m.resgatada).length;
+  const fs = sem.filter((m) => m.resgatada).length;
+  const prontosD = ms.filter((m) => m.completa && !m.resgatada).length;
+  const prontosS = sem.filter((m) => m.completa && !m.resgatada).length;
+  const dias = diasParaRenovar();
+  const semanal = abaDesafios === 'semana';
+  return `<section class="card secao-missoes">
+      <header class="plano-topo"><div><h2>🎯 Desafios</h2><small>${semanal
+        ? `${fs}/${sem.length} resgatados · renova em ${dias} dia${dias > 1 ? 's' : ''} · todos = baú da semana 🧰`
+        : `${fd}/${ms.length} resgatados · todos = baú bônus 🎁`}</small></div>
+        <span class="pilula-dna" title="DNA mutante">🧬 <b>${dados().carteira.dna || 0}</b></span></header>
+      <div class="seletor-desafios" role="tablist">
+        <button role="tab" class="${semanal ? '' : 'on'}" data-acao="aba-desafios" data-item="dia">Diários <small>${fd}/${ms.length}</small>${prontosD ? '<i class="ponto"></i>' : ''}</button>
+        <button role="tab" class="${semanal ? 'on' : ''}" data-acao="aba-desafios" data-item="semana">Semanais <small>${fs}/${sem.length}</small>${prontosS ? '<i class="ponto"></i>' : ''}</button>
+      </div>
+      ${semanal ? missoesListaHTML(sem, { acao: 'resgatar-semanal', semanal: true }) : missoesListaHTML(ms)}
+    </section>`;
 }
 
 const CONTEUDO = {
@@ -495,6 +520,13 @@ export function montar(el) {
       case 'resgatar':
         if (!editando) resgatar(item);
         break;
+      case 'resgatar-semanal':
+        if (!editando) resgatarSemanal(item);
+        break;
+      case 'aba-desafios':
+        abaDesafios = item === 'semana' ? 'semana' : 'dia';
+        render(el);
+        break;
       case 'ir-loja':
         irPara('pet', { secao: 'loja' });
         break;
@@ -663,24 +695,27 @@ export function render(el, params = {}) {
       </div>
     </header>
 
-    <section class="placar card">
-      <div class="placar-topo">
-        <div class="placar-cena">
-          ${cenaHTML({ tam: 'm' })}
-          ${barrasPetHTML(true)}
-        </div>
-        <div class="placar-saudacao">
-          <h1>${saudacao()}${nome}!</h1>
-          <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
-          <button class="balao" data-acao="companheiro"><b>${esc(p.nome)}:</b> ${esc(fala(variacaoFala))}</button>
+    <section class="placar card placar-heroi">
+      <div class="placar-saudacao">
+        <h1>${saudacao()}${nome}!</h1>
+        <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
+      </div>
+      <div class="palco-heroi fisico-palco-${fis.n}">
+        <span class="palco-brilho" aria-hidden="true"></span>
+        ${cenaHTML({ tam: 'xg' })}
+        <div class="palco-nomes">
+          <button class="palco-tag" data-acao="ir-personagem"><b>${esc(d.ajustes.nome || 'Você')}</b><small>Nv ${info.nivel}${fis.n > 1 ? ` · ${fis.nome}` : ''}</small></button>
+          <button class="palco-tag palco-tag-pet" data-acao="cuidar-pet"><b>${esc(p.nome)}</b><small>${estagioDoNivel().nome}</small></button>
         </div>
       </div>
+      <button class="balao balao-heroi" data-acao="companheiro"><b>${esc(p.nome)}:</b> ${esc(fala(variacaoFala))}</button>
+      <div class="palco-barras" data-acao="cuidar-pet">${barrasPetHTML(true)}</div>
       <div class="placar-linha" data-acao="ir-perfil">
         <div class="nivel-badge" aria-label="Nível ${info.nivel}"><small>NÍVEL</small><strong>${info.nivel}</strong></div>
         <div class="placar-xp">
           <div class="placar-titulo"><span>${info.titulo}${fis.n > 1 ? ` · ${fis.nome}` : ''}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +${bonusPocao()}%</span>` : ''}${bonusPet() ? '<span class="tag tag-pet">🐾 +5%</span>' : ''}</div>
           <div class="barra-xp"><div class="barra-xp-fill" style="width:${pctInicial}%"></div></div>
-          <small>${info.xpNoNivel} / ${info.xpParaProximo} XP · faltam ${info.falta}</small>
+          <small>${info.maximo ? `Nível máximo! ${podePrestigio() ? '⭐ Faça o prestígio no Perfil' : `${formatarNumero(info.xpNoNivel)} XP além do 50`}` : `${formatarNumero(info.xpNoNivel)} / ${formatarNumero(info.xpParaProximo)} XP · faltam ${formatarNumero(info.falta)}`}</small>
         </div>
         <div class="pontos-dia"><strong>${xpHoje}</strong><small>XP hoje</small></div>
       </div>
@@ -695,10 +730,7 @@ export function render(el, params = {}) {
 
     ${!editando ? planoHTML() : ''}
 
-    ${!editando && ms.length ? `<section class="card secao-missoes">
-      <header class="plano-topo"><div><h2>🎯 Missões do dia</h2><small>${msFeitas}/${ms.length} resgatadas · todas = baú bônus 🎁</small></div></header>
-      ${missoesListaHTML(ms)}
-    </section>` : ''}
+    ${!editando && ms.length ? desafiosHTML(ms) : ''}
 
     <div class="secao-cab painel-cab">
       <h2 class="secao-titulo">🧩 Painel</h2>
@@ -811,18 +843,35 @@ function abrirBauAnimado() {
 }
 
 /** Resgata a recompensa de uma missão concluída. */
+function resgatarSemanal(tipo) {
+  let res;
+  alterar(() => (res = resgatarDesafio(tipo)));
+  if (!res) return;
+  tocar('moeda');
+  vibrar([15, 30, 15]);
+  toast(`Desafio semanal! +${res.xp} XP · +${res.moedas} 🪙 · +${res.dna} 🧬`);
+  if (res.bonus) {
+    confete();
+    celebrar({
+      emoji: '🧰',
+      titulo: 'Semana completa!',
+      subtitulo: `Baú da semana: +${res.bonus.xp} XP, +${res.bonus.moedas} moedas, +${res.bonus.dna} 🧬${res.bonus.escudo ? ' e um 🛡️ escudo' : ''}. Semanas completas: ${res.bonus.semanas}.`,
+    });
+  }
+}
+
 function resgatar(tipo) {
   let res;
   alterar(() => (res = resgatarMissao(tipo)));
   if (!res) return;
   tocar('moeda');
   vibrar([15, 30, 15]);
-  toast(`Missão resgatada! +${res.xp} XP · +${res.moedas} 🪙`);
+  toast(`Desafio do dia resgatado! +${res.xp} XP · +${res.moedas} 🪙`);
   if (res.bonus) {
     celebrar({
       emoji: '🎁',
-      titulo: 'Todas as missões!',
-      subtitulo: `Baú bônus: +${res.bonus.xp} XP e +${res.bonus.moedas} moedas${res.bonus.escudo ? ' e um 🛡️ escudo!' : '.'} Volte amanhã para novas missões.`,
+      titulo: 'Todos os desafios do dia!',
+      subtitulo: `Baú bônus: +${res.bonus.xp} XP e +${res.bonus.moedas} moedas${res.bonus.escudo ? ' e um 🛡️ escudo!' : '.'} Volte amanhã para novos desafios.`,
     });
   }
 }

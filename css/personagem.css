@@ -1162,3 +1162,306 @@ svg.pixel {
 }
 .novidades p b { color: var(--texto); }
 .novidades .btn { margin-top: 6px; }
+
+/* =============================================================
+   v4.1 — Personagem e pet em destaque na tela Hoje
+   ============================================================= */
+.placar-heroi {
+  padding-top: 16px;
+  overflow: hidden;
+}
+.placar-heroi .placar-saudacao h1 {
+  font-size: 21px;
+}
+.palco-heroi {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 10px -16px 0;
+  padding: 18px 0 10px;
+  background: radial-gradient(55% 55% at 50% 45%, rgba(var(--roxo-rgb), 0.32), transparent 72%);
+}
+.palco-heroi::after {
+  /* chão do palco */
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 50px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--roxo-rgb), 0.35), transparent);
+  pointer-events: none;
+}
+.palco-brilho {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(2px 2px at 18% 30%, rgba(255, 255, 255, 0.55), transparent 60%),
+    radial-gradient(2px 2px at 80% 22%, rgba(255, 255, 255, 0.45), transparent 60%),
+    radial-gradient(1.5px 1.5px at 66% 48%, rgba(255, 255, 255, 0.4), transparent 60%),
+    radial-gradient(1.5px 1.5px at 30% 60%, rgba(255, 255, 255, 0.35), transparent 60%);
+  animation: palco-pisca 4s ease-in-out infinite;
+}
+@keyframes palco-pisca {
+  50% { opacity: 0.4; }
+}
+.cena.tam-xg {
+  gap: 10px;
+}
+.cena.tam-xg .cena-avatar .avatar-pixel {
+  width: 128px;
+}
+.cena.tam-xg .cena-pet .avatar {
+  --tam: 104px;
+}
+.cena.tam-xg .cena-chao {
+  height: 12px;
+}
+.palco-nomes {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.palco-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 104px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  background: var(--card-forte);
+  border: 1px solid var(--borda);
+  line-height: 1.2;
+}
+.palco-tag b {
+  font-size: 14px;
+}
+.palco-tag small {
+  font-size: 12px;
+  color: var(--texto-2);
+}
+.palco-tag-pet b {
+  color: var(--ciano-claro);
+}
+[data-theme='claro'] .palco-tag-pet b {
+  color: var(--roxo);
+}
+.balao-heroi {
+  margin-top: 4px;
+  border-radius: 14px;
+  text-align: center;
+}
+.palco-barras {
+  margin-top: 10px;
+  cursor: pointer;
+}
+.palco-barras .pet-barras.compacto {
+  flex-direction: row;
+  width: 100%;
+  gap: 10px;
+}
+.palco-barras .pet-barras.compacto .pet-barra {
+  flex: 1;
+  grid-template-columns: 18px 1fr;
+  font-size: 13px;
+}
+.palco-barras .pet-barras.compacto .pet-barra i {
+  height: 7px;
+}
+.placar-heroi .placar-linha {
+  margin-top: 14px;
+}
+
+/* =============================================================
+   v5 — Fogo em pixel art (pet mutante e forma final do personagem)
+   ============================================================= */
+.fogo {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px rgba(251, 146, 60, 0.55));
+}
+.fogo .fq {
+  opacity: 0;
+  animation: fogo-quadro var(--dur, 0.9s) steps(1, end) infinite;
+}
+@keyframes fogo-quadro {
+  0% { opacity: 1; }
+  16.67% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fogo .fq { animation: none; }
+  .fogo .fq:first-child { opacity: 1; }
+}
+.avatar.pet .avatar-emoji {
+  width: calc(var(--tam) * 0.8 * var(--escala, 1));
+  flex-shrink: 0;
+}
+.avatar-emoji > svg.pixel:not(.fogo) {
+  position: relative;
+  z-index: 1;
+}
+/* pet mutante: a aura vira brasa e ele fica com cara de fera */
+.avatar.mutante .avatar-aura {
+  background: radial-gradient(circle at 50% 55%, rgba(239, 68, 68, 0.35), transparent 70%);
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 calc(var(--tam) * 0.2) rgba(239, 68, 68, 0.35);
+}
+.avatar.mut-3 .avatar-aura {
+  border-color: rgba(253, 224, 71, 0.6);
+  box-shadow: 0 0 calc(var(--tam) * 0.35) rgba(249, 115, 22, 0.55);
+  animation: aura-pulso-brasa 1.2s ease-in-out infinite;
+}
+@keyframes aura-pulso-brasa {
+  50% { box-shadow: 0 0 calc(var(--tam) * 0.5) rgba(249, 115, 22, 0.75); }
+}
+.avatar.mutante .avatar-emoji {
+  animation: respirar-fera 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+@keyframes respirar-fera {
+  50% { transform: translateY(-2%) scale(1.03); }
+}
+
+/* ---------- v5: cartão de mutação (aba Pet → Cuidar) ---------- */
+.mutacao-card {
+  margin: 14px 0 4px;
+  padding: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(239, 68, 68, 0.12), transparent 60%), var(--card);
+}
+.mutacao-card.pronta {
+  border-color: rgba(250, 204, 21, 0.7);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.25);
+}
+.mutacao-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mutacao-cab h4 {
+  font-size: 17px;
+}
+.mutacao-trilha {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mutacao-trilha > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 18px 2px 6px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--card-forte);
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  text-align: center;
+}
+.mutacao-trilha > div.on {
+  opacity: 1;
+  filter: none;
+}
+.mutacao-trilha > div.atual {
+  outline: 2px solid rgba(239, 68, 68, 0.7);
+}
+.mutacao-trilha .avatar {
+  --tam: 44px;
+}
+.mutacao-trilha small {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.mutacao-trilha i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--texto-2);
+}
+.mutacao-falta {
+  font-size: 13px;
+  color: #fca5a5;
+  margin: 4px 0 8px;
+}
+[data-theme='claro'] .mutacao-falta {
+  color: #b91c1c;
+}
+.mutacao-alerta {
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: rgba(239, 68, 68, 0.15);
+  margin-bottom: 8px;
+}
+.mutacao-card .btn {
+  margin-top: 6px;
+}
+.mutacao-card .btn[aria-disabled='true'] {
+  opacity: 0.6;
+}
+.dica.pequena {
+  font-size: 12px;
+  margin-top: 8px;
+}
+.celebra-pet .avatar {
+  --tam: 140px;
+}
+/* o pet mutante ocupa o espaço do tamanho novo (não invade o personagem) */
+.avatar.pet.mutante {
+  width: calc(var(--tam) * max(1, 0.8 * var(--escala, 1)));
+  height: calc(var(--tam) * max(1, 0.8 * var(--escala, 1)));
+}
+.cena .cena-pet .avatar.mutante {
+  margin-left: calc(var(--tam) * 0.12 * var(--escala, 1));
+}
+
+/* ---------- v5: fogo em volta do personagem ---------- */
+.personagem > svg.fogo {
+  position: absolute;
+  z-index: 0;
+}
+.personagem > svg.avatar-pixel {
+  position: relative;
+  z-index: 1;
+}
+/* com o fogo de pixel art, a aura antiga fica só como brilho de fundo */
+.fisico-4 .aura-guerreiro { opacity: 0.55; }
+.fisico-5 .aura-guerreiro { opacity: 0.7; }
+.fisico-6 .aura-guerreiro {
+  opacity: 0.85;
+  width: 150%;
+  height: 130%;
+  bottom: -8%;
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(253, 224, 71, 0.9), transparent 40%),
+    radial-gradient(ellipse at 50% 55%, rgba(239, 68, 68, 0.75), transparent 70%);
+  filter: blur(3px);
+  animation: aura-fogo 0.9s ease-in-out infinite;
+}
+.fisico-6 > svg.avatar-pixel {
+  filter: drop-shadow(0 0 1.5px #fde68a) drop-shadow(0 0 6px rgba(249, 115, 22, 1)) drop-shadow(0 0 14px rgba(239, 68, 68, 0.8));
+  animation: aura-pulso-fogo 1s ease-in-out infinite;
+}
+.fisico-6 .faiscas i { background: #fde047; box-shadow: 0 0 6px #f97316; }
+.fisico-4 > svg.fogo, .fisico-5 > svg.fogo, .fisico-6 > svg.fogo { filter: drop-shadow(0 0 3px rgba(251, 146, 60, 0.6)); animation: none; }
+.fisico-5 > svg.fogo { filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.7)); }
+/* 6 físicos: 3 por linha */
+.evolucao-fisica { grid-template-columns: repeat(3, 1fr); row-gap: 8px; }
+.evolucao-fisica .mini-fisico .avatar-pixel.mini { width: 46px; }
+/* palco da tela Hoje: espaço para as chamas não cobrirem a saudação */
+.palco-heroi.fisico-palco-4 { padding-top: 26px; }
+.palco-heroi.fisico-palco-5 { padding-top: 32px; }
+.palco-heroi.fisico-palco-6 { padding-top: 54px; }
+.placar-heroi .placar-saudacao { position: relative; z-index: 2; }

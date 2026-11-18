@@ -7,8 +7,8 @@
 // =============================================================
 
 import { dados, alterar } from './store.js';
-import { hojeKey, esc, formatarDataHora, formatarHora } from './utils.js';
-import { nivelInfo, pocaoAtiva, xpParaChegar } from './xp.js';
+import { hojeKey, esc, formatarDataHora, formatarHora, formatarNumero } from './utils.js';
+import { nivelInfo, pocaoAtiva, xpParaChegar, faltaParaNivel } from './xp.js';
 import { PERSONAGENS, ESTAGIOS, avatarHTML, companheiro, estagioDoNivel, novosNaColecao, personagem, SKINS_PET } from './personagens.js';
 import { TEMAS, ITENS, ITENS_DO_PET, comprar, visuaisDaLoja, skinLiberada, usarAmpulheta, abrirBauMisterioso } from './loja.js';
 import { CATEGORIAS, opcoes, liberado, comoLiberar, etiquetaRaridade, avatarSVG, personagemHTML, RARIDADES, previaItem, FISICOS, fisicoAtual } from './visual.js';
@@ -125,7 +125,7 @@ const SECAO = {
       <div class="evolucao-fisica">${FISICOS.map((x) => `<div class="${info.nivel >= x.nivel ? 'on' : 'travado'} ${x.n === f.n ? 'atual' : ''}">
           <span class="mini-fisico">${personagemHTML(d.avatar, { classe: 'mini', fisico: x.n })}</span>
           <b>${x.nome}</b><small>nível ${x.nivel}</small></div>`).join('')}</div>
-      <p class="dica" style="padding:0 14px 14px">${prox ? `Próximo: <b>${prox.nome}</b> no nível ${prox.nivel} — faltam ${xpParaChegar(prox.nivel) - d.xp.total} XP. ${esc(prox.desc)}` : 'Você chegou ao físico máximo: Imparável! 🔥'}</p>
+      <p class="dica" style="padding:0 14px 14px">${prox ? `Próximo: <b>${prox.nome}</b> no nível ${prox.nivel} — faltam ${formatarNumero(faltaParaNivel(prox.nivel))} XP. ${esc(prox.desc)}` : 'Você chegou à forma final: Lenda em Chamas! 🔥'}</p>
     </section>
 
     <div class="secao-cab"><h2 class="secao-titulo">Itens exclusivos</h2><small class="apagado">${liberados}/${exclusivos.length} liberados</small></div>
@@ -140,13 +140,13 @@ const SECAO = {
   colecao(d, info) {
     const p = companheiro();
     const qtd = Object.keys(d.colecao).length;
-    const est = estagioDoNivel(info.nivel);
-    const prox = ESTAGIOS.find((e) => e.nivel > info.nivel);
+    const est = estagioDoNivel();
+    const prox = ESTAGIOS[est.n + 1];
     return `
     <section class="card pet-card">
-      <div class="secao-cab"><h3>Evolução de ${esc(p.nome)}</h3><small class="apagado">${est.nome}</small></div>
-      <div class="trilha-evolucao">${ESTAGIOS.map((e) => `<div class="${info.nivel >= e.nivel ? 'on' : ''} ${e.estagio === est.estagio ? 'atual' : ''}"><i>${e.enfeite || '•'}</i><small>${e.nome}</small></div>`).join('')}</div>
-      <p class="dica">${prox ? `Evolui para <b>${prox.nome}</b> no nível ${prox.nivel}.` : 'Forma máxima alcançada! 🌟'}</p>
+      <div class="secao-cab"><h3>Mutações de ${esc(p.nome)}</h3><small class="apagado">${est.nome}</small></div>
+      <div class="trilha-evolucao">${ESTAGIOS.map((e) => `<div class="${est.n >= e.n ? 'on' : ''} ${e.n === est.n ? 'atual' : ''}"><i>${e.n ? '🧬' : '🐾'}</i><small>${e.nome}</small></div>`).join('')}</div>
+      <p class="dica">${prox ? `Próxima: <b>${prox.nome}</b> — nível ${prox.nivel} e ${prox.dna} 🧬 DNA. Faça a mutação em Cuidar.` : 'Forma máxima: Fera Suprema! 🔥'}</p>
     </section>
     <div class="secao-cab"><h2 class="secao-titulo">Pets</h2><small class="apagado">${qtd}/${PERSONAGENS.length} desbloqueados</small></div>
     <div class="grade-colecao">
@@ -268,7 +268,7 @@ function mostrarPersonagem(id) {
         <div class="${ok ? '' : 'silhueta'}">${avatarHTML(x, { tam: 'gg', nivel: ok ? nivel : 1, estado: ativo ? undefined : false })}</div>
         <h3 class="${ok ? 'gradiente-texto' : ''}">${ok ? esc(ativo ? companheiro().nome : x.especie) : '???'}</h3>
         <p>${ok ? (x.jeito ? `Personalidade: ${x.jeito}.` : `Desbloqueado em ${formatarDataHora(d.colecao[id])}.`) : `Como desbloquear: <b>${esc(x.requisito)}</b>`}</p>
-        ${ok ? `<div class="onb-estagios">${ESTAGIOS.map((e) => `<div class="${nivel >= e.nivel ? '' : 'apagado'}">${avatarHTML(x, { tam: 'p', nivel: e.nivel, estado: false })}<small>${e.nome}</small></div>`).join('')}</div>` : ''}
+        ${ok ? `<div class="onb-estagios">${ESTAGIOS.map((e) => `<div class="${ativo && (d.pet.mutacao || 0) >= e.n ? '' : 'apagado'}">${avatarHTML(x, { tam: 'p', mutacao: e.n, estado: false })}<small>${e.nome}</small></div>`).join('')}</div>` : ''}
         ${ok && !ativo ? `<label class="campo"><span>Nome do novo pet</span><input class="entrada" name="nomeNovo" maxlength="16" value="${esc(x.nome)}"></label>
           <button class="btn primario largo" data-escolher>Adotar como meu pet</button>
           <p class="dica">Os cuidados (força, limpeza, alegria) continuam os mesmos.</p>` : ''}

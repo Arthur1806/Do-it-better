@@ -10,10 +10,12 @@
 
 import { dados } from './store.js';
 import { emitir, hojeKey, esc, aleatorioComSemente } from './utils.js';
-import { nivelInfo, xpDoDia } from './xp.js';
+import { nivelInfo, xpDoDia, nivelDesbloqueio } from './xp.js';
 import { resumoRotina, sequenciaRotina } from './historico.js';
 import { PET_SPRITES, RABO_RAPOSA, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
 import { estadoPet } from './pet.js';
+import { gradeMutante, paletaMutante, mutacaoDoPet, FOGO_PET, MUTACOES } from './mutacao.js';
+import { fogoSVG } from './fogo.js';
 
 // ---------- Contadores usados pelos requisitos ----------
 export function contarHabitos(d = dados()) {
@@ -56,7 +58,7 @@ export const PERSONAGENS = [
   { id: 'pantera', nome: 'Sombra', especie: 'Pantera', sprite: 'felino', paleta: P('#1f2937', '#374151', { E: '#facc15', R: '#4b5563' }), requisito: 'Conclua 5 pendências em um único dia', teste: (d) => maxPendenciasNumDia(d) >= 5, cor: '#a78bfa' },
   { id: 'robo', nome: 'Byte', especie: 'Robô', sprite: 'robo', paleta: P('#94a3b8', '#cbd5e1', { L: '#22d3ee', R: '#ef4444', k: '#1f2937' }), requisito: 'Resgate 20 missões diárias', teste: (d) => d.stats.missoesResgatadas >= 20, cor: '#94a3b8' },
   { id: 'husky', nome: 'Neve', especie: 'Husky', sprite: 'canino', paleta: P('#64748b', '#f8fafc', { a: '#475569' }), requisito: 'Bata 3 recordes de carga', teste: (d) => recordesPessoais(d) >= 3, cor: '#38bdf8' },
-  { id: 'fenix', nome: 'Brasa', especie: 'Fênix', sprite: 'passaro', paleta: P('#dc2626', '#fb923c', { Y: '#fde047', a: '#fbbf24', W: '#fde68a' }), requisito: 'Alcance o nível 10', teste: (d) => nivelInfo(d.xp.total).nivel >= 10, cor: '#f97316' },
+  { id: 'fenix', nome: 'Brasa', especie: 'Fênix', sprite: 'passaro', paleta: P('#dc2626', '#fb923c', { Y: '#fde047', a: '#fbbf24', W: '#fde68a' }), requisito: 'Alcance o nível 15', teste: (d) => nivelDesbloqueio(d) >= 15, cor: '#f97316' },
   { id: 'dragaoGelo', nome: 'Cristal', especie: 'Dragão de gelo', sprite: 'dragao', paleta: P('#60a5fa', '#e0f2fe', { Y: '#f8fafc', a: '#2563eb', N: '#1e3a8a' }), requisito: 'Chegue à liga Diamante numa semana', teste: (d) => d.stats.melhorLiga >= 4, cor: '#93c5fd' },
   { id: 'dragao', nome: 'Ignis', especie: 'Dragão', sprite: 'dragao', paleta: P('#16a34a', '#fde047', { Y: '#fef3c7', a: '#15803d' }), requisito: '30 dias seguidos com a rotina 100%', teste: (d) => melhorSeq(d) >= 30, cor: '#34d399', lendario: true },
 ];
@@ -66,24 +68,21 @@ export const SKINS_PET = [
   { id: 'normal', nome: 'Original', r: 'comum', d: { tipo: 'gratis' } },
   { id: 'rosa', nome: 'Algodão-doce', r: 'raro', cores: { A: '#f9a8d4', B: '#fdf2f8', a: '#ec4899' }, d: { tipo: 'loja', preco: 250 } },
   { id: 'sombra', nome: 'Sombra', r: 'epico', cores: { A: '#3b2f6b', B: '#6d5dbf', a: '#1e1847', E: '#a78bfa' }, d: { tipo: 'loja', preco: 500 } },
-  { id: 'neon', nome: 'Neon', r: 'epico', cores: { A: '#06b6d4', B: '#a5f3fc', a: '#0e7490', E: '#0f172a' }, d: { tipo: 'nivel', n: 8 } },
-  { id: 'dourado', nome: 'Dourado', r: 'lendario', cores: { A: '#f59e0b', B: '#fde68a', a: '#b45309', G: '#d97706' }, d: { tipo: 'nivel', n: 15 } },
+  { id: 'neon', nome: 'Neon', r: 'epico', cores: { A: '#06b6d4', B: '#a5f3fc', a: '#0e7490', E: '#0f172a' }, d: { tipo: 'nivel', n: 12 } },
+  { id: 'dourado', nome: 'Dourado', r: 'lendario', cores: { A: '#f59e0b', B: '#fde68a', a: '#b45309', G: '#d97706' }, d: { tipo: 'nivel', n: 25 } },
   { id: 'fantasma', nome: 'Fantasma', r: 'lendario', cores: { A: '#e2e8f0', B: '#f8fafc', a: '#94a3b8', E: '#6366f1' }, d: { tipo: 'sequencia', n: 30 } },
 ];
 
 /** Estágios de evolução (pelo nível do jogador). */
-export const ESTAGIOS = [
-  { estagio: 1, nivel: 1, nome: 'Filhote', enfeite: '' },
-  { estagio: 2, nivel: 3, nome: 'Aprendiz', enfeite: '✨' },
-  { estagio: 3, nivel: 6, nome: 'Guerreiro', enfeite: '⚡' },
-  { estagio: 4, nivel: 10, nome: 'Mestre', enfeite: '👑' },
-  { estagio: 5, nivel: 20, nome: 'Lendário', enfeite: '🌟' },
-];
+/**
+ * Estágios do pet (v5): agora vêm das MUTAÇÕES (mutacao.js), não do nível.
+ * O nível só libera a mutação; quem muta é você, com DNA 🧬.
+ */
+export const ESTAGIOS = MUTACOES.map((m) => ({ estagio: m.n + 1, n: m.n, nivel: m.nivel || 1, dna: m.dna || 0, nome: m.nome, enfeite: '' }));
 
-export function estagioDoNivel(nivel) {
-  let e = ESTAGIOS[0];
-  for (const x of ESTAGIOS) if (nivel >= x.nivel) e = x;
-  return e;
+/** Estágio atual do SEU pet (o parâmetro é mantido por compatibilidade). */
+export function estagioDoNivel() {
+  return ESTAGIOS[mutacaoDoPet().n];
 }
 
 export function personagem(id) {
@@ -106,26 +105,30 @@ export function desbloqueado(id) {
 // -------------------------------------------------------------
 
 /** Grade do pet com os efeitos de estado (sujo, sonolento). */
-function gradePet(p, est) {
+function gradePet(p, est, mut = 0) {
   const camadas = [{ linhas: PET_SPRITES[p.sprite] }];
   if (p.rabo) camadas.push(RABO_RAPOSA);
-  const g = compor(camadas, 14, 12);
+  const g = gradeMutante(compor(camadas, 14, 12), mut);
+  const H = g.length;
+  const W = g[0].length;
+  const olho = (c) => c === 'E' || c === 'X';
   if (est && est.sujo) {
     // manchas de sujeira em posições fixas
-    for (let y = 0; y < 12; y++) for (let x = 0; x < 14; x++) if (g[y][x] !== '.' && g[y][x] !== 'E' && (x * 7 + y * 13) % 9 === 0) g[y][x] = 'm';
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (['A', 'B', 'a'].includes(g[y][x]) && (x * 7 + y * 13) % 9 === 0) g[y][x] = 'm';
   }
   if (est && (est.fraco || est.dormindo || est.faminto)) {
     // olhos semicerrados: o pixel de cima do olho vira pálpebra
-    for (let y = 0; y < 11; y++) for (let x = 0; x < 14; x++) if (g[y][x] === 'E' && g[y + 1][x] === 'E') g[y][x] = 'A';
+    for (let y = 0; y < H - 1; y++) for (let x = 0; x < W; x++) if (olho(g[y][x]) && olho(g[y + 1][x])) g[y][x] = 'A';
   }
   return g;
 }
 
-/** Paleta final: base do pet + skin + efeito de fraqueza (cores apagadas). */
-function paletaPet(p, skinId, est) {
+/** Paleta final: base do pet + skin + mutação + efeito de fraqueza (cores apagadas). */
+function paletaPet(p, skinId, est, mut = 0) {
   const skin = SKINS_PET.find((s) => s.id === skinId);
-  const pal = { ...p.paleta, ...(skin && skin.cores ? skin.cores : {}) };
+  let pal = { ...p.paleta, ...(skin && skin.cores ? skin.cores : {}) };
   if (!pal.a) pal.a = sombrear(pal.A, 0.22);
+  pal = paletaMutante(pal, mut);
   pal.g = pal.g || sombrear(pal.G || '#92400e', 0.25);
   pal.m = '#6b4a2b'; // lama
   if (est && est.fraco) {
@@ -139,16 +142,22 @@ function paletaPet(p, skinId, est) {
  * @param {object} p   item do catálogo (padrão: o seu pet)
  * @param {{tam?:string, nivel?:number, humor?:string, skin?:string, estado?:object|false}} o
  */
-export function avatarHTML(p = companheiro(), { tam = 'm', nivel = nivelInfo().nivel, humor = '', skin, estado } = {}) {
+export function avatarHTML(p = companheiro(), { tam = 'm', nivel = nivelInfo().nivel, humor = '', skin, estado, mutacao } = {}) {
   const d = dados();
   const ehMeu = p.id === d.pet.especie;
   const sk = skin ?? (ehMeu ? d.pet.skin : 'normal');
   const est = estado === false ? null : estado || (ehMeu ? estadoPet() : null);
-  const e = estagioDoNivel(nivel);
+  // a mutação é do SEU pet (os da coleção aparecem como filhotes)
+  const mut = mutacao ?? (ehMeu ? mutacaoDoPet().n : 0);
+  const e = { estagio: mut + 1, enfeite: '' };
   const classes = est ? Object.keys(est).filter((k) => est[k] === true).map((k) => 'pet-' + k).join(' ') : '';
-  return `<span class="avatar pet tam-${tam} est-${e.estagio} ${humor ? 'humor-' + humor : ''} ${classes}" style="--cor-pers:${p.cor}" aria-label="${esc(p.nome)}">
+  const grade = gradePet(p, est, mut);
+  // o desenho cresce com a mutação (pixels do mesmo tamanho, pet maior)
+  const escala = ((grade[0].length + 2) / 16) * (1 + mut * 0.07);
+  const fogo = mut && !(est && est.fraco) ? fogoSVG(grade, { intensidade: FOGO_PET[mut], semente: 3 + mut }) : '';
+  return `<span class="avatar pet tam-${tam} est-${e.estagio} ${mut ? 'mutante mut-' + mut : ''} ${humor ? 'humor-' + humor : ''} ${classes}" style="--cor-pers:${p.cor};--escala:${escala.toFixed(3)}" aria-label="${esc(p.nome)}">
     <span class="avatar-aura"></span>
-    <span class="avatar-emoji">${svgDaGrade(gradePet(p, est), paletaPet(p, sk, est), { rotulo: p.especie })}</span>
+    <span class="avatar-emoji">${fogo}${svgDaGrade(grade, paletaPet(p, sk, est, mut), { rotulo: p.especie })}</span>
     ${e.enfeite ? `<span class="avatar-enfeite">${e.enfeite}</span>` : ''}
     ${est && est.sujo ? '<span class="pet-moscas" aria-hidden="true"><i></i><i></i></span>' : ''}
     ${est && est.triste ? '<span class="pet-lagrima" aria-hidden="true"></span>' : ''}

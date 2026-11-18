@@ -309,9 +309,9 @@ const TELAS = {
     html: `<div class="onb-hero">
         <img src="icons/icon-192.png" alt="" class="onb-icone">
         <h1 class="logo grande">Do It Better</h1>
-        <p class="onb-lead">Transforme sua rotina num jogo. Ganhe XP, suba de nível, cumpra missões e desbloqueie personagens.</p>
+        <p class="onb-lead">Transforme sua rotina num jogo. Ganhe XP, suba de nível, cumpra desafios e desbloqueie personagens.</p>
         <div class="onb-beneficios">
-          <div><span>🎯</span>Missões e baú todo dia</div>
+          <div><span>🎯</span>Desafios diários e semanais</div>
           <div><span>🔥</span>Sequências que multiplicam seu XP</div>
           <div><span>🐾</span>Um pet que depende de você</div>
           <div><span>🧑‍🎤</span>Personagem com skins exclusivas</div>
@@ -345,8 +345,8 @@ const TELAS = {
         <div class="onb-pers cinco">${PERSONAGENS.filter((x) => x.inicial).map((x) => opcao(r.pet === x.id, `data-pet="${x.id}"`, `${avatarHTML(x, { tam: 'g', nivel: 1, estado: false })}<b>${x.especie}</b><small>${x.jeito}</small>`, 'pers')).join('')}</div>
         <label class="campo"><span>Nome do pet</span><input class="entrada grande" data-campo="nomePet" maxlength="16" placeholder="${esc(p.nome)}" value="${esc(r.nomePet)}"></label>
         <div class="onb-evolucao card">
-          <small>Evolução do seu pet (conforme seu nível)</small>
-          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', nivel: e.nivel, estado: false })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
+          <small>Mutações do seu pet (com nível e DNA 🧬)</small>
+          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', mutacao: e.n, estado: false })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
         </div>
         <p class="dica centro">E mais ${PERSONAGENS.filter((x) => !x.inicial).length} pets para desbloquear com o seu progresso 🔒</p>`,
     };

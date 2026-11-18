@@ -10,10 +10,12 @@
 
 import { dados } from './store.js';
 import { emitir, esc } from './utils.js';
-import { nivelInfo } from './xp.js';
+import { nivelInfo, nivelDesbloqueio } from './xp.js';
 import { sequenciaRotina } from './historico.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
-import { CORPO, ROUPAS, CALCAS, CABELOS, CHAPEUS, ACESSORIOS, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
+import { svgDaGrade, sombrear, misturar } from './pixel.js';
+import { gradeBoneco } from './boneco.js';
+import { fogoSVG } from './fogo.js';
 
 export const RARIDADES = {
   comum: { nome: 'Comum', cor: '#94a3b8' },
@@ -45,7 +47,7 @@ export const ESTILOS = {
     { id: 'careca', nome: 'Careca', r: 'comum', d: G },
     { id: 'coque', nome: 'Coque', r: 'raro', d: loja(120) },
     { id: 'cacheado', nome: 'Cacheado', r: 'raro', d: loja(150) },
-    { id: 'moicano', nome: 'Moicano', r: 'epico', d: nivel(6) },
+    { id: 'moicano', nome: 'Moicano', r: 'epico', d: nivel(8) },
     { id: 'trancas', nome: 'Tranças', r: 'epico', d: { tipo: 'sequencia', n: 14 } },
     { id: 'chamas', nome: 'Cabelo de fogo', r: 'lendario', d: { tipo: 'sequencia', n: 30 } },
   ],
@@ -55,17 +57,23 @@ export const ESTILOS = {
     { id: 'moletom', nome: 'Moletom', r: 'comum', d: G },
     { id: 'listrada', nome: 'Listrada', r: 'raro', d: loja(120) },
     { id: 'social', nome: 'Camisa social', r: 'raro', d: loja(150) },
-    { id: 'jaqueta', nome: 'Jaqueta', r: 'raro', d: nivel(4) },
+    { id: 'jaqueta', nome: 'Jaqueta', r: 'raro', d: nivel(5) },
     { id: 'atleta', nome: 'Regata de atleta', r: 'epico', d: { tipo: 'treinos', n: 10 } },
     { id: 'armadura', nome: 'Armadura', r: 'epico', d: loja(800) },
-    { id: 'heroi', nome: 'Traje de herói', r: 'lendario', d: nivel(20) },
+    { id: 'heroi', nome: 'Traje de herói', r: 'lendario', d: nivel(35) },
     { id: 'terno', nome: 'Terno de gala', r: 'lendario', d: { tipo: 'liga', n: 5, texto: 'Chegue à liga Mestre' } },
+    { id: 'time', nome: 'Camisa de time', r: 'raro', d: loja(180) },
+    { id: 'couro', nome: 'Jaqueta de couro', r: 'epico', d: { tipo: 'semanas', n: 2 } },
+    { id: 'kimono', nome: 'Kimono', r: 'epico', d: { tipo: 'semanas', n: 5 } },
+    { id: 'ninja', nome: 'Traje ninja', r: 'lendario', d: { tipo: 'semanas', n: 10 } },
   ],
   calca: [
     { id: 'calca', nome: 'Calça', r: 'comum', d: G },
     { id: 'shorts', nome: 'Shorts', r: 'comum', d: G },
     { id: 'saia', nome: 'Saia', r: 'comum', d: G },
     { id: 'jogger', nome: 'Jogger', r: 'raro', d: loja(80) },
+    { id: 'cargo', nome: 'Bermuda cargo', r: 'raro', d: loja(90) },
+    { id: 'rasgada', nome: 'Calça rasgada', r: 'raro', d: loja(120) },
   ],
   chapeu: [
     { id: 'nenhum', nome: 'Nenhum', r: 'comum', d: G },
@@ -73,7 +81,7 @@ export const ESTILOS = {
     { id: 'gorro', nome: 'Gorro', r: 'comum', d: G },
     { id: 'boneVirado', nome: 'Boné para trás', r: 'raro', d: loja(100) },
     { id: 'bandana', nome: 'Bandana', r: 'raro', d: loja(120) },
-    { id: 'cowboy', nome: 'Chapéu de cowboy', r: 'epico', d: nivel(8) },
+    { id: 'cowboy', nome: 'Chapéu de cowboy', r: 'epico', d: nivel(18) },
     { id: 'cartola', nome: 'Cartola', r: 'epico', d: loja(450) },
     { id: 'viking', nome: 'Capacete viking', r: 'epico', d: { tipo: 'medalha', id: 'pendencias-2', texto: 'Medalha Resolvedor Prata' } },
     { id: 'coroa', nome: 'Coroa', r: 'lendario', d: { tipo: 'medalha', id: 'semana-perfeita', texto: 'Tenha uma semana perfeita' } },
@@ -85,7 +93,10 @@ export const ESTILOS = {
     { id: 'barba', nome: 'Barba', r: 'comum', d: G },
     { id: 'bigode', nome: 'Bigode', r: 'comum', d: G },
     { id: 'escuros', nome: 'Óculos escuros', r: 'raro', d: loja(150) },
-    { id: 'fone', nome: 'Fone gamer', r: 'epico', d: nivel(5) },
+    { id: 'fone', nome: 'Fone gamer', r: 'epico', d: nivel(6) },
+    { id: 'cicatriz', nome: 'Cicatriz de batalha', r: 'raro', d: nivel(10) },
+    { id: 'mascara', nome: 'Máscara ninja', r: 'epico', d: { tipo: 'semanas', n: 8 } },
+    { id: 'corrente', nome: 'Corrente de ouro', r: 'lendario', d: { tipo: 'prestigio', n: 1 } },
   ],
 };
 
@@ -98,7 +109,7 @@ export const CORES = {
     { id: 'p4', nome: 'Morena', hex: '#c68642', r: 'comum', d: G },
     { id: 'p5', nome: 'Escura', hex: '#8d5524', r: 'comum', d: G },
     { id: 'p6', nome: 'Muito escura', hex: '#5c3a21', r: 'comum', d: G },
-    { id: 'alien', nome: 'Alienígena', hex: '#86efac', r: 'epico', d: nivel(12) },
+    { id: 'alien', nome: 'Alienígena', hex: '#86efac', r: 'epico', d: nivel(18) },
     { id: 'avatar', nome: 'Azul místico', hex: '#93c5fd', r: 'epico', d: loja(400) },
   ],
   corCabelo: [
@@ -111,7 +122,7 @@ export const CORES = {
     { id: 'azul', nome: 'Azul', hex: '#60a5fa', r: 'raro', d: loja(100) },
     { id: 'verde', nome: 'Verde', hex: '#4ade80', r: 'raro', d: loja(100) },
     { id: 'roxo', nome: 'Roxo', hex: '#a78bfa', r: 'raro', d: loja(100) },
-    { id: 'dourado', nome: 'Dourado', hex: '#fcd34d', r: 'lendario', d: nivel(15) },
+    { id: 'dourado', nome: 'Dourado', hex: '#fcd34d', r: 'lendario', d: nivel(25) },
     { id: 'platina', nome: 'Platina neon', hex: '#e0f2fe', r: 'lendario', d: { tipo: 'liga', n: 4, texto: 'Chegue à liga Diamante' } },
   ],
   geral: [
@@ -129,7 +140,7 @@ export const CORES = {
     { id: 'rosa', nome: 'Rosa', hex: '#ec4899', r: 'comum', d: G },
     { id: 'marrom', nome: 'Marrom', hex: '#92400e', r: 'comum', d: G },
     { id: 'neon', nome: 'Verde neon', hex: '#39ff14', r: 'raro', d: loja(150) },
-    { id: 'ouro', nome: 'Ouro', hex: '#fbbf24', r: 'lendario', d: nivel(15) },
+    { id: 'ouro', nome: 'Ouro', hex: '#fbbf24', r: 'lendario', d: nivel(25) },
   ],
 };
 
@@ -176,7 +187,7 @@ export function liberado(cat, item, d = dados()) {
     case 'loja':
       return d.guardaRoupa.includes(idItem(cat, item.id));
     case 'nivel':
-      return nivelInfo(d.xp.total).nivel >= dd.n;
+      return nivelDesbloqueio(d) >= dd.n;
     case 'sequencia':
       return Math.max(d.stats.melhorSequencia || 0, sequenciaRotina()) >= dd.n;
     case 'medalha':
@@ -185,6 +196,10 @@ export function liberado(cat, item, d = dados()) {
       return (d.stats.melhorLiga || 0) >= dd.n;
     case 'treinos':
       return d.treinos.sessoes.length >= dd.n;
+    case 'semanas':
+      return (d.stats.semanasCompletas || 0) >= dd.n;
+    case 'prestigio':
+      return (d.xp.prestigio || 0) >= dd.n;
     default:
       return false;
   }
@@ -204,6 +219,10 @@ export function comoLiberar(item) {
       return `${dd.n} dias seguidos de rotina 100%`;
     case 'treinos':
       return `${dd.n} treinos finalizados`;
+    case 'semanas':
+      return `Complete todos os desafios semanais em ${dd.n} semana${dd.n > 1 ? 's' : ''}`;
+    case 'prestigio':
+      return `${dd.n} estrela${dd.n > 1 ? 's' : ''} de prestígio`;
     default:
       return dd.texto || '';
   }
@@ -246,10 +265,10 @@ const hexDe = (cat, valor, padrao) => {
 };
 
 /** Paleta completa a partir da configuração. */
-function paletaDe(cfg) {
+function paletaDe(cfg, fisico = 1) {
   const pele = hexDe('pele', cfg.pele, '#f1c27d');
   const cabelo = hexDe('corCabelo', cfg.corCabelo, '#5b3a29');
-  return {
+  const pal = {
     S: pele,
     s: sombrear(pele, 0.16),
     B: misturar(pele, '#ff6b81', 0.35),
@@ -276,7 +295,16 @@ function paletaDe(cfg) {
     U: '#f97316',
     u: '#fde047',
     X: '#67e8f9', // olhos brilhando (físico Imparável)
+    K: '#141821', // sombra do terno / jaqueta de couro
+    f: '#e5e7eb', // sola do tênis
   };
+  // tênis claro ganha sola cinza (senão a sola some)
+  const n = parseInt(pal.F.slice(1), 16);
+  const luz = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  if (luz > 0.75) pal.f = '#9ca3af';
+  // olhos da Lenda em Chamas: brasa amarela
+  if (fisico >= 6) pal.X = '#fde047';
+  return pal;
 }
 
 // -------------------------------------------------------------
@@ -286,10 +314,11 @@ function paletaDe(cfg) {
 
 export const FISICOS = [
   { n: 1, nivel: 1, nome: 'Franzino', desc: 'Começando a jornada. Cada dia cumprido deixa você mais forte.' },
-  { n: 2, nivel: 3, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
-  { n: 3, nivel: 6, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
-  { n: 4, nivel: 10, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, aura de fogo.' },
-  { n: 5, nivel: 20, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+  { n: 2, nivel: 5, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
+  { n: 3, nivel: 12, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
+  { n: 4, nivel: 22, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, brasas em volta.' },
+  { n: 5, nivel: 35, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+  { n: 6, nivel: 50, nome: 'Lenda em Chamas', desc: 'A forma final: o corpo inteiro envolto em fogo vivo.' },
 ];
 
 export function fisicoDoNivel(nivel) {
@@ -298,106 +327,35 @@ export function fisicoDoNivel(nivel) {
   return f;
 }
 export function fisicoAtual() {
-  return fisicoDoNivel(nivelInfo(dados().xp.total).nivel);
+  const d = dados();
+  const f = fisicoDoNivel(nivelInfo(d.xp.total).nivel);
+  const piso = FISICOS.find((x) => x.n === (d.xp.fisicoPiso || 1));
+  return piso && piso.n > f.n ? piso : f;
 }
 
-/** Aplica músculos, expressão e brilho do físico na grade. */
-function aplicarFisico(g, n) {
-  const get = (x, y) => (g[y] && g[y][x] !== undefined ? g[y][x] : '.');
-  const set = (x, y, ch) => {
-    if (y >= 0 && y < g.length && x >= 0 && x < 16) g[y][x] = ch;
-  };
-  if (n >= 2) {
-    // bíceps mais largos e sobrancelhas
-    for (const y of [12, 13]) {
-      set(1, y, get(2, y));
-      set(14, y, get(13, y));
-    }
-    if (get(5, 4) === 'S') set(5, 4, 'E');
-    if (get(10, 4) === 'S') set(10, 4, 'E');
-  }
-  if (n >= 3) {
-    // ombros largos, antebraços fortes, pescoço grosso, cara séria
-    set(2, 11, get(3, 11));
-    set(13, 11, get(12, 11));
-    set(1, 14, 'S');
-    set(14, 14, 'S');
-    if (get(5, 10) === '.') set(5, 10, 's');
-    if (get(10, 10) === '.') set(10, 10, 's');
-    // sobrancelhas franzidas (em "V") e olhar estreito: cara de bravo
-    const rosto = (x, y) => ['S', 'E', 'B'].includes(get(x, y));
-    if (rosto(4, 4) && rosto(11, 4)) {
-      set(6, 4, 'S');
-      set(9, 4, 'S');
-      set(4, 4, 'E');
-      set(11, 4, 'E');
-      set(6, 5, 'E');
-      set(9, 5, 'E');
-      set(5, 5, 'S');
-      set(10, 5, 'S');
-    }
-    if (get(7, 8) === 'M') {
-      set(7, 8, 'k');
-      set(8, 8, 'k');
-    }
-  }
-  if (n >= 4) {
-    // corpo de guerreiro e pintura de batalha
-    set(1, 11, get(2, 11));
-    set(14, 11, get(13, 11));
-    for (const y of [15, 16, 17]) {
-      set(2, y, get(3, y));
-      set(13, y, get(12, y));
-    }
-    set(2, 18, 'F');
-    set(13, 18, 'F');
-    // pintura de guerra (2 riscos em cada bochecha) e boca cerrada
-    for (const [x, y] of [[4, 7], [5, 7], [10, 7], [11, 7]]) if (['S', 'B'].includes(get(x, y))) set(x, y, 'R');
-    if (get(6, 8) === 'S' && get(7, 8) === 'k') set(6, 8, 'k');
-    if (get(9, 8) === 'S' && get(8, 8) === 'k') set(9, 8, 'k');
-    // faixa de guerreiro na testa (só se a testa estiver à mostra)
-    let testa = 0;
-    for (let x = 4; x <= 11; x++) if (['S', 'h'].includes(get(x, 3))) testa++;
-    if (testa >= 6) {
-      for (let x = 3; x <= 12; x++) if (['S', 'h', 'H'].includes(get(x, 3))) set(x, 3, 'R');
-      set(13, 3, 'R');
-      set(14, 4, 'R');
-      set(13, 4, 'R');
-    }
-  }
-  if (n >= 5) {
-    // olhos brilhando
-    for (let y = 5; y <= 6; y++) for (let x = 0; x < 16; x++) if (g[y][x] === 'E' && !(y === 5 && (x === 6 || x === 9))) g[y][x] = 'X';
-  }
-  return g;
-}
-
-/** Grade (16x20) do personagem. */
+/** Grade (24x32) do personagem, já com o físico (molde do corpo e rosto). */
 export function gradeAvatar(cfg = dados().avatar, fisico = fisicoAtual().n) {
-  const c = { ...AVATAR_PADRAO, ...cfg };
-  const roupa = ROUPAS[c.roupa] || ROUPAS.camiseta;
-  const camadas = [];
-  if (roupa.atras) camadas.push(roupa.atras);
-  camadas.push({ linhas: CORPO });
-  camadas.push(CALCAS[c.calca] || CALCAS.calca);
-  camadas.push(roupa);
-  camadas.push(CABELOS[c.cabelo] || CABELOS.curto);
-  camadas.push(ACESSORIOS[c.acessorio] || ACESSORIOS.nenhum);
-  camadas.push(CHAPEUS[c.chapeu] || CHAPEUS.nenhum);
-  return aplicarFisico(compor(camadas, 16, 20), fisico);
+  return gradeBoneco({ ...AVATAR_PADRAO, ...cfg }, fisico);
 }
 
 /** SVG do personagem (só o desenho). */
 export function avatarSVG(cfg = dados().avatar, classe = '', { fisico } = {}) {
   const c = { ...AVATAR_PADRAO, ...cfg };
-  return svgDaGrade(gradeAvatar(c, fisico || fisicoAtual().n), paletaDe(c), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
+  const f = fisico || fisicoAtual().n;
+  return svgDaGrade(gradeAvatar(c, f), paletaDe(c, f), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
 }
 
-/** Personagem com a aura do físico (fogo no Guerreiro, energia no Imparável). */
-export function personagemHTML(cfg = dados().avatar, { classe = '', fisico } = {}) {
+/** Fogo em pixel art por físico: brasas (Guerreiro), energia azul (Imparável) e inferno (Lenda). */
+const FOGO_FISICO = { 4: { intensidade: 0.5, paleta: 'fogo' }, 5: { intensidade: 0.95, paleta: 'azul', duracao: 0.8 }, 6: { intensidade: 1.5, paleta: 'fogo', duracao: 0.75 } };
+
+/** Personagem com a aura do físico (brasas no Guerreiro, energia no Imparável, fogo na Lenda). */
+export function personagemHTML(cfg = dados().avatar, { classe = '', fisico, semFogo = false } = {}) {
   const f = fisico || fisicoAtual().n;
+  const c = { ...AVATAR_PADRAO, ...cfg };
+  const fogo = !semFogo && FOGO_FISICO[f] ? fogoSVG(gradeAvatar(c, f), { ...FOGO_FISICO[f], semente: 11 + f }) : '';
   return `<span class="personagem fisico-${f}">
     <span class="aura-guerreiro" aria-hidden="true"></span>
+    ${fogo}
     ${avatarSVG(cfg, classe, { fisico: f })}
     ${f >= 4 ? '<span class="faiscas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' : ''}
   </span>`;
@@ -428,48 +386,70 @@ export function etiquetaRaridade(r) {
  */
 export function montarEditor(el, cfg, { categorias = CATEGORIAS.map((c) => c.id), aoMudar, preview } = {}) {
   let aba = categorias[0];
-  const desenhar = () => {
-    const cat = CATEGORIAS.find((c) => c.id === aba);
-    const lista = opcoes(aba);
-    el.innerHTML = `
-      <div class="editor-preview">${preview ? preview(cfg) : avatarSVG(cfg, 'grande')}</div>
-      <div class="editor-abas">${categorias.map((id) => `<button type="button" class="${id === aba ? 'on' : ''}" data-ed-aba="${id}">${CATEGORIAS.find((c) => c.id === id).nome}</button>`).join('')}</div>
-      <div class="editor-opcoes ${cat.tipo}">
-        ${lista.map((o) => {
-          const ok = liberado(aba, o);
-          const sel = cfg[aba] === o.id;
-          const amostra = cat.tipo === 'cor'
-            ? `<span class="amostra-cor" style="background:${o.hex}"></span>`
-            : avatarSVG(previaItem(cfg, aba, o.id), 'mini');
-          return `<button type="button" class="opcao-visual ${sel ? 'on' : ''} ${ok ? '' : 'travado'} r-${o.r}" data-ed-valor="${o.id}" ${ok ? '' : 'aria-disabled="true"'}>
-            ${amostra}
-            <small>${esc(o.nome)}</small>
-            ${ok ? (o.r !== 'comum' ? `<i class="ponto-raridade" style="background:${RARIDADES[o.r].cor}"></i>` : '') : `<span class="cadeado">🔒</span>`}
-          </button>`;
-        }).join('')}
-      </div>
-      <p class="dica centro editor-dica"></p>`;
+  // A estrutura é desenhada UMA vez. Depois só a prévia e a grade de opções
+  // são trocadas, então a barra de categorias (rolável para o lado) e a
+  // rolagem da folha não voltam para o início a cada toque.
+  el.innerHTML = `
+    <div class="editor-preview"></div>
+    <div class="editor-abas">${categorias.map((id) => `<button type="button" class="${id === aba ? 'on' : ''}" data-ed-aba="${id}">${CATEGORIAS.find((c) => c.id === id).nome}</button>`).join('')}</div>
+    <div class="editor-opcoes"></div>
+    <p class="dica centro editor-dica"></p>`;
+  const elPreview = el.querySelector('.editor-preview');
+  const elAbas = el.querySelector('.editor-abas');
+  const elOpcoes = el.querySelector('.editor-opcoes');
+  const elDica = el.querySelector('.editor-dica');
+
+  const desenharPreview = () => {
+    elPreview.innerHTML = preview ? preview(cfg) : avatarSVG(cfg, 'grande');
   };
-  desenhar();
+  const botaoOpcao = (cat, o) => {
+    const ok = liberado(aba, o);
+    const sel = cfg[aba] === o.id;
+    const amostra = cat.tipo === 'cor'
+      ? `<span class="amostra-cor" style="background:${o.hex}"></span>`
+      : avatarSVG(previaItem(cfg, aba, o.id), 'mini');
+    return `<button type="button" class="opcao-visual ${sel ? 'on' : ''} ${ok ? '' : 'travado'} r-${o.r}" data-ed-valor="${o.id}" ${ok ? '' : 'aria-disabled="true"'}>
+      ${amostra}
+      <small>${esc(o.nome)}</small>
+      ${ok ? (o.r !== 'comum' ? `<i class="ponto-raridade" style="background:${RARIDADES[o.r].cor}"></i>` : '') : `<span class="cadeado">🔒</span>`}
+    </button>`;
+  };
+  const desenharOpcoes = () => {
+    const cat = CATEGORIAS.find((c) => c.id === aba);
+    // mantém a altura enquanto troca o conteúdo (evita "pulo" na rolagem da folha)
+    elOpcoes.style.minHeight = elOpcoes.offsetHeight ? elOpcoes.offsetHeight + 'px' : '';
+    elOpcoes.className = `editor-opcoes ${cat.tipo}`;
+    elOpcoes.innerHTML = opcoes(aba).map((o) => botaoOpcao(cat, o)).join('');
+    requestAnimationFrame(() => (elOpcoes.style.minHeight = ''));
+  };
+  desenharPreview();
+  desenharOpcoes();
+
   el.addEventListener('click', (e) => {
     const a = e.target.closest('[data-ed-aba]');
     if (a) {
+      if (a.dataset.edAba === aba) return;
       aba = a.dataset.edAba;
-      desenhar();
+      elAbas.querySelectorAll('[data-ed-aba]').forEach((b) => b.classList.toggle('on', b === a));
+      // só rola a barra o necessário para o botão escolhido ficar visível
+      const r = a.getBoundingClientRect();
+      const rb = elAbas.getBoundingClientRect();
+      if (r.left < rb.left || r.right > rb.right) elAbas.scrollBy({ left: r.left < rb.left ? r.left - rb.left - 18 : r.right - rb.right + 18, behavior: 'smooth' });
+      elDica.innerHTML = '';
+      desenharOpcoes();
       return;
     }
     const b = e.target.closest('[data-ed-valor]');
     if (!b) return;
     const item = buscarItem(aba, b.dataset.edValor);
     if (!liberado(aba, item)) {
-      const dica = el.querySelector('.editor-dica');
-      dica.innerHTML = `🔒 <b>${esc(item.nome)}</b> ${etiquetaRaridade(item.r)} — ${esc(comoLiberar(item))}`;
+      elDica.innerHTML = `🔒 <b>${esc(item.nome)}</b> ${etiquetaRaridade(item.r)} — ${esc(comoLiberar(item))}`;
       return;
     }
+    elDica.innerHTML = '';
     cfg[aba] = item.id;
-    const rol = el.querySelector('.editor-opcoes').scrollLeft;
-    desenhar();
-    el.querySelector('.editor-opcoes').scrollLeft = rol;
+    elOpcoes.querySelectorAll('[data-ed-valor]').forEach((x) => x.classList.toggle('on', x === b));
+    desenharPreview();
     if (aoMudar) aoMudar(cfg);
   });
 }
