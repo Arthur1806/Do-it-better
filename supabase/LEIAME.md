@@ -24,6 +24,14 @@ Quem protege os dados são as regras de segurança (RLS) e as funções abaixo.
 - `ranking_geral(p_limite)`, `ranking_amigos()`, `ranking_grupo(p_grupo)` — semana de segunda a domingo (fuso de São Paulo).
 - `criar_grupo`, `adicionar_ao_grupo`, `sair_do_grupo`, `meus_grupos`.
 
+## Modo admin
+
+A tabela `admins` (só e-mails, ninguém lê pelo app) e a função `sou_admin()` dizem se a conta logada é admin.
+Nesse caso o app (`js/admin.js`) deixa tudo no máximo e repõe sempre que abre: nível 50 + 5 estrelas,
+Lenda em Chamas, todos os pets/skins/temas/visuais/medalhas, pet Fera Suprema com tudo em 100,
+moedas, DNA, escudos e mochila cheios. O XP extra entra como ajuste e **não conta no XP da semana**
+(o ranking continua justo). Para adicionar outro admin: `insert into public.admins (email) values ('...')`.
+
 ## Edge Function `conta` (sem e-mail)
 
 O app **não envia e-mails**. A função cria a conta já confirmada e devolve um **código de recuperação**

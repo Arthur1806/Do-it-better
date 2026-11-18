@@ -7,7 +7,7 @@
 // Se criar um arquivo novo, adicione-o também na lista ARQUIVOS.
 // =============================================================
 
-const VERSAO = '5.1.0';
+const VERSAO = '5.1.1';
 const CACHE = `do-it-better-v${VERSAO}`;
 
 // Todos os caminhos são relativos (o site roda em /do-it-better/)
@@ -53,6 +53,7 @@ const ARQUIVOS = [
   './js/nuvem.js',
   './js/sync.js',
   './js/social.js',
+  './js/admin.js',
   './icons/icon.svg',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

@@ -32,6 +32,7 @@ import * as perfil from './perfil.js';
 import * as social from './social.js';
 import { iniciarSync } from './sync.js';
 import * as Nuvem from './nuvem.js';
+import { verificarAdmin, manterMaximo } from './admin.js';
 import { abrirNotas } from './extras.js';
 import { contagens } from './pendencias.js';
 
@@ -164,6 +165,12 @@ window.addEventListener('dib-nuvem-baixou', () => {
 const checarPedidos = () => Nuvem.logado() && social.atualizarAvisos().then(() => atualizarBadges()).catch(() => {});
 setTimeout(checarPedidos, 2500);
 setInterval(checarPedidos, 120000);
+// modo admin (decidido pelo servidor): ao abrir, ao entrar na conta e a cada hora
+const checarAdmin = () => verificarAdmin().then((sou) => sou && (atualizarBadges(), renderizarAtual())).catch(() => {});
+setTimeout(checarAdmin, 3000);
+Nuvem.aoMudarSessao(() => setTimeout(checarAdmin, 4000));
+window.addEventListener('dib-nuvem-baixou', () => setTimeout(checarAdmin, 500));
+setInterval(() => manterMaximo() && Store.salvar({ silencioso: true }), 3600000);
 
 document.getElementById('tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-aba]');
