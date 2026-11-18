@@ -76,12 +76,6 @@ export function abaAtual() {
   return atual;
 }
 
-/** Aba vizinha (para o gesto de deslizar). */
-function vizinha(direcao) {
-  const i = ORDEM.indexOf(atual) + direcao;
-  return ORDEM[i] || null;
-}
-
 // ---------- Barra de título compacta ----------
 function atualizarCompacto() {
   const barra = document.getElementById('topo-compacto');
@@ -92,44 +86,6 @@ function atualizarCompacto() {
   if (t.textContent !== TITULOS[atual]) t.textContent = TITULOS[atual];
 }
 
-// ---------- Deslizar para trocar de aba ----------
-// Ignora gestos que começam em áreas que já usam o deslize (listas
-// roláveis para o lado, cartões de pendência, alças de arrastar...).
-const IGNORAR = '.pend-swipe, .filtros, .emoji-sugestoes, .alca, .grade-blocos.editando, input, textarea, select, .subnav, .chips-linha, .grafico, .liga-escada, .trilha-evolucao, .onb-estagios';
-
-export function ligarGestos() {
-  const telas = document.getElementById('telas');
-  let ini = null;
-  telas.addEventListener(
-    'touchstart',
-    (e) => {
-      if (e.touches.length !== 1 || e.target.closest(IGNORAR)) {
-        ini = null;
-        return;
-      }
-      const t = e.touches[0];
-      // perto da borda esquerda o iOS usa o gesto de "voltar"
-      if (t.clientX < 18) {
-        ini = null;
-        return;
-      }
-      ini = { x: t.clientX, y: t.clientY, t: Date.now() };
-    },
-    { passive: true }
-  );
-  telas.addEventListener(
-    'touchend',
-    (e) => {
-      if (!ini) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - ini.x;
-      const dy = t.clientY - ini.y;
-      const rapido = Date.now() - ini.t < 600;
-      ini = null;
-      if (!rapido || Math.abs(dx) < 70 || Math.abs(dy) > 45) return;
-      const prox = vizinha(dx < 0 ? 1 : -1);
-      if (prox) irPara(prox);
-    },
-    { passive: true }
-  );
-}
+// ---------- Trocar de aba ----------
+// A aba só muda tocando na barra de abas (o gesto de deslizar foi
+// removido na v4.1 porque trocava de aba sem querer).

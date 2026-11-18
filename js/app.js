@@ -17,7 +17,7 @@ import { estadoPet, atualizarPet } from './pet.js';
 import { atualizarLiga, missoesParaResgatar, bauDisponivel } from './missoes.js';
 import { aplicarTemaCor } from './loja.js';
 import { abrirOnboarding } from './onboarding.js';
-import { registrarAba, irPara, renderizarAtual, ligarGestos, abaAtual } from './nav.js';
+import { registrarAba, irPara, renderizarAtual, abaAtual } from './nav.js';
 import { abrirSheet, toast, flutuarXP, celebrar, vibrar } from './ui.js';
 import { tocar } from './sons.js';
 import * as painel from './painel.js';
@@ -147,7 +147,6 @@ registrarAba('tarefas', tarefas);
 registrarAba('treinos', treinos);
 registrarAba('pet', petaba);
 registrarAba('perfil', perfil);
-ligarGestos();
 
 document.getElementById('tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-aba]');

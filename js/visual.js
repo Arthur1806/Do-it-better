@@ -428,48 +428,70 @@ export function etiquetaRaridade(r) {
  */
 export function montarEditor(el, cfg, { categorias = CATEGORIAS.map((c) => c.id), aoMudar, preview } = {}) {
   let aba = categorias[0];
-  const desenhar = () => {
-    const cat = CATEGORIAS.find((c) => c.id === aba);
-    const lista = opcoes(aba);
-    el.innerHTML = `
-      <div class="editor-preview">${preview ? preview(cfg) : avatarSVG(cfg, 'grande')}</div>
-      <div class="editor-abas">${categorias.map((id) => `<button type="button" class="${id === aba ? 'on' : ''}" data-ed-aba="${id}">${CATEGORIAS.find((c) => c.id === id).nome}</button>`).join('')}</div>
-      <div class="editor-opcoes ${cat.tipo}">
-        ${lista.map((o) => {
-          const ok = liberado(aba, o);
-          const sel = cfg[aba] === o.id;
-          const amostra = cat.tipo === 'cor'
-            ? `<span class="amostra-cor" style="background:${o.hex}"></span>`
-            : avatarSVG(previaItem(cfg, aba, o.id), 'mini');
-          return `<button type="button" class="opcao-visual ${sel ? 'on' : ''} ${ok ? '' : 'travado'} r-${o.r}" data-ed-valor="${o.id}" ${ok ? '' : 'aria-disabled="true"'}>
-            ${amostra}
-            <small>${esc(o.nome)}</small>
-            ${ok ? (o.r !== 'comum' ? `<i class="ponto-raridade" style="background:${RARIDADES[o.r].cor}"></i>` : '') : `<span class="cadeado">🔒</span>`}
-          </button>`;
-        }).join('')}
-      </div>
-      <p class="dica centro editor-dica"></p>`;
+  // A estrutura é desenhada UMA vez. Depois só a prévia e a grade de opções
+  // são trocadas, então a barra de categorias (rolável para o lado) e a
+  // rolagem da folha não voltam para o início a cada toque.
+  el.innerHTML = `
+    <div class="editor-preview"></div>
+    <div class="editor-abas">${categorias.map((id) => `<button type="button" class="${id === aba ? 'on' : ''}" data-ed-aba="${id}">${CATEGORIAS.find((c) => c.id === id).nome}</button>`).join('')}</div>
+    <div class="editor-opcoes"></div>
+    <p class="dica centro editor-dica"></p>`;
+  const elPreview = el.querySelector('.editor-preview');
+  const elAbas = el.querySelector('.editor-abas');
+  const elOpcoes = el.querySelector('.editor-opcoes');
+  const elDica = el.querySelector('.editor-dica');
+
+  const desenharPreview = () => {
+    elPreview.innerHTML = preview ? preview(cfg) : avatarSVG(cfg, 'grande');
   };
-  desenhar();
+  const botaoOpcao = (cat, o) => {
+    const ok = liberado(aba, o);
+    const sel = cfg[aba] === o.id;
+    const amostra = cat.tipo === 'cor'
+      ? `<span class="amostra-cor" style="background:${o.hex}"></span>`
+      : avatarSVG(previaItem(cfg, aba, o.id), 'mini');
+    return `<button type="button" class="opcao-visual ${sel ? 'on' : ''} ${ok ? '' : 'travado'} r-${o.r}" data-ed-valor="${o.id}" ${ok ? '' : 'aria-disabled="true"'}>
+      ${amostra}
+      <small>${esc(o.nome)}</small>
+      ${ok ? (o.r !== 'comum' ? `<i class="ponto-raridade" style="background:${RARIDADES[o.r].cor}"></i>` : '') : `<span class="cadeado">🔒</span>`}
+    </button>`;
+  };
+  const desenharOpcoes = () => {
+    const cat = CATEGORIAS.find((c) => c.id === aba);
+    // mantém a altura enquanto troca o conteúdo (evita "pulo" na rolagem da folha)
+    elOpcoes.style.minHeight = elOpcoes.offsetHeight ? elOpcoes.offsetHeight + 'px' : '';
+    elOpcoes.className = `editor-opcoes ${cat.tipo}`;
+    elOpcoes.innerHTML = opcoes(aba).map((o) => botaoOpcao(cat, o)).join('');
+    requestAnimationFrame(() => (elOpcoes.style.minHeight = ''));
+  };
+  desenharPreview();
+  desenharOpcoes();
+
   el.addEventListener('click', (e) => {
     const a = e.target.closest('[data-ed-aba]');
     if (a) {
+      if (a.dataset.edAba === aba) return;
       aba = a.dataset.edAba;
-      desenhar();
+      elAbas.querySelectorAll('[data-ed-aba]').forEach((b) => b.classList.toggle('on', b === a));
+      // só rola a barra o necessário para o botão escolhido ficar visível
+      const r = a.getBoundingClientRect();
+      const rb = elAbas.getBoundingClientRect();
+      if (r.left < rb.left || r.right > rb.right) elAbas.scrollBy({ left: r.left < rb.left ? r.left - rb.left - 18 : r.right - rb.right + 18, behavior: 'smooth' });
+      elDica.innerHTML = '';
+      desenharOpcoes();
       return;
     }
     const b = e.target.closest('[data-ed-valor]');
     if (!b) return;
     const item = buscarItem(aba, b.dataset.edValor);
     if (!liberado(aba, item)) {
-      const dica = el.querySelector('.editor-dica');
-      dica.innerHTML = `🔒 <b>${esc(item.nome)}</b> ${etiquetaRaridade(item.r)} — ${esc(comoLiberar(item))}`;
+      elDica.innerHTML = `🔒 <b>${esc(item.nome)}</b> ${etiquetaRaridade(item.r)} — ${esc(comoLiberar(item))}`;
       return;
     }
+    elDica.innerHTML = '';
     cfg[aba] = item.id;
-    const rol = el.querySelector('.editor-opcoes').scrollLeft;
-    desenhar();
-    el.querySelector('.editor-opcoes').scrollLeft = rol;
+    elOpcoes.querySelectorAll('[data-ed-valor]').forEach((x) => x.classList.toggle('on', x === b));
+    desenharPreview();
     if (aoMudar) aoMudar(cfg);
   });
 }

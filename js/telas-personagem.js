@@ -21,7 +21,7 @@ export function cenaHTML({ tam = 'm', cfg, acoes = true } = {}) {
   const d = dados();
   return `<div class="cena tam-${tam}">
     <button class="cena-avatar" ${acoes ? 'data-acao="ir-personagem"' : 'tabindex="-1"'} aria-label="Seu personagem">${personagemHTML(cfg || d.avatar)}</button>
-    <button class="cena-pet" ${acoes ? 'data-acao="cuidar-pet"' : 'tabindex="-1"'} aria-label="Cuidar do pet">${avatarHTML(companheiro(), { tam: tam === 'g' ? 'g' : 'm', humor: humor() })}</button>
+    <button class="cena-pet" ${acoes ? 'data-acao="cuidar-pet"' : 'tabindex="-1"'} aria-label="Cuidar do pet">${avatarHTML(companheiro(), { tam: tam === 'g' || tam === 'xg' ? 'g' : 'm', humor: humor() })}</button>
     <span class="cena-chao"></span>
   </div>`;
 }

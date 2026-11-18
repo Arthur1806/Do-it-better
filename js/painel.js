@@ -27,7 +27,7 @@ import {
 } from './ui.js';
 import { irPara } from './nav.js';
 import { BLOCOS_FIXOS } from './seed.js';
-import { companheiro, avatarHTML, humor, fala } from './personagens.js';
+import { companheiro, avatarHTML, humor, fala, estagioDoNivel } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
 import { pocaoAtiva, bonusPocao } from './xp.js';
 import { cenaHTML, barrasPetHTML } from './telas-personagem.js';
@@ -663,18 +663,21 @@ export function render(el, params = {}) {
       </div>
     </header>
 
-    <section class="placar card">
-      <div class="placar-topo">
-        <div class="placar-cena">
-          ${cenaHTML({ tam: 'm' })}
-          ${barrasPetHTML(true)}
-        </div>
-        <div class="placar-saudacao">
-          <h1>${saudacao()}${nome}!</h1>
-          <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
-          <button class="balao" data-acao="companheiro"><b>${esc(p.nome)}:</b> ${esc(fala(variacaoFala))}</button>
+    <section class="placar card placar-heroi">
+      <div class="placar-saudacao">
+        <h1>${saudacao()}${nome}!</h1>
+        <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
+      </div>
+      <div class="palco-heroi fisico-palco-${fis.n}">
+        <span class="palco-brilho" aria-hidden="true"></span>
+        ${cenaHTML({ tam: 'xg' })}
+        <div class="palco-nomes">
+          <button class="palco-tag" data-acao="ir-personagem"><b>${esc(d.ajustes.nome || 'Você')}</b><small>Nv ${info.nivel}${fis.n > 1 ? ` · ${fis.nome}` : ''}</small></button>
+          <button class="palco-tag palco-tag-pet" data-acao="cuidar-pet"><b>${esc(p.nome)}</b><small>${estagioDoNivel(info.nivel).nome}</small></button>
         </div>
       </div>
+      <button class="balao balao-heroi" data-acao="companheiro"><b>${esc(p.nome)}:</b> ${esc(fala(variacaoFala))}</button>
+      <div class="palco-barras" data-acao="cuidar-pet">${barrasPetHTML(true)}</div>
       <div class="placar-linha" data-acao="ir-perfil">
         <div class="nivel-badge" aria-label="Nível ${info.nivel}"><small>NÍVEL</small><strong>${info.nivel}</strong></div>
         <div class="placar-xp">

@@ -8,6 +8,12 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 4.1
+
+- **Personagem e pet em destaque na tela Hoje:** um palco grande no topo, com o seu boneco e o pet lado a lado, nomes, nível, estágio do pet, fala e as necessidades.
+- **Editor do personagem sem "pulos":** ao tocar numa categoria (Sapato, Cor da roupa, Acessório...) ou num item, a barra de categorias e a lista ficam onde estavam.
+- **Abas só pelo toque:** deslizar para o lado não troca mais de aba (evita trocas sem querer).
+
 ## Novidades da versão 4.0
 
 - **📋 Plano de hoje:** a tela Hoje agora mostra numa lista só, em ordem de horário, tudo o que é para fazer no dia — itens da rotina, desafios (checks), pendências com prazo hoje ou atrasadas e o treino. Cada linha tem uma **caixinha grande com ✓** para marcar (as atrasadas ficam em laranja). O que já foi feito desce para "Feitos hoje".
@@ -53,7 +59,7 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 - **Liga da semana:** seu XP semanal define a liga (Bronze → Mestre), comparando com a semana passada.
 - **Combos e sons:** concluir várias coisas em sequência rápida gera combo; efeitos sonoros curtos (desligáveis em Ajustes).
 - **Alerta de sequência em risco** à noite, se a rotina ainda não fechou.
-- **Navegação nova:** transições na direção da aba, indicador luminoso na barra de abas, avisos (números e pontos) nos ícones, barra de título compacta ao rolar, **deslizar para os lados troca de aba**, deslizar uma pendência → conclui / ← edita, e o Perfil dividido em Jornada · Coleção · Medalhas · Loja · Ajustes.
+- **Navegação nova:** transições na direção da aba, indicador luminoso na barra de abas, avisos (números e pontos) nos ícones, barra de título compacta ao rolar, deslizar uma pendência → conclui / ← edita, e o Perfil dividido em Jornada · Coleção · Medalhas · Loja · Ajustes.
 - **Correção da barra preta no iPhone:** o app mede a altura real da tela no modo instalado e todas as camadas passaram a ser relativas a ela.
 - Seus dados antigos são migrados automaticamente (versão do esquema 1 → 2), sem perder nada.
 
