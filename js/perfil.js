@@ -15,6 +15,7 @@ import { PERSONAGENS, ESTAGIOS, avatarHTML, companheiro, estagioDoNivel, novosNa
 import { ligaAtual, ligaSemanaPassada, LIGAS } from './missoes.js';
 import { avatarSVG, fisicoAtual } from './visual.js';
 import { irPara } from './nav.js';
+import * as Nuvem from './nuvem.js';
 import { abrirOnboarding } from './onboarding.js';
 import { limparExemplos } from './seed.js';
 import { anel, barras } from './graficos.js';
@@ -107,6 +108,9 @@ export function montar(el) {
           tocar('fanfarra');
           toast('⭐ Prestígio! Uma nova jornada começa.');
         });
+        break;
+      case 'ir-conta':
+        irPara('social', { secao: 'conta' });
         break;
       case 'exportar':
         exportarBackup();
@@ -305,9 +309,14 @@ const SECAO = {
       <button class="ajuste clicavel" data-acao="refazer"><span>✨ Refazer personalização</span>${ICONE_SETA_DIR}</button>
     </section>
 
+    <h2 class="secao-titulo">Conta e nuvem</h2>
+    <section class="card ajustes">
+      <button class="ajuste clicavel" data-acao="ir-conta"><span>☁️ ${Nuvem.logado() ? 'Minha conta e sincronização' : 'Criar conta / entrar (salvar na nuvem)'}</span>${ICONE_SETA_DIR}</button>
+    </section>
+
     <h2 class="secao-titulo">Backup</h2>
     <section class="card ajustes">
-      <p class="dica">Seus dados ficam só neste aparelho. Exporte um backup de vez em quando (ex.: salve no app Arquivos ou no iCloud Drive).</p>
+      <p class="dica">${Nuvem.logado() ? 'Seu progresso também fica salvo na nuvem. O backup em arquivo é uma garantia extra.' : 'Sem conta, seus dados ficam só neste aparelho. Exporte um backup de vez em quando (ex.: salve no app Arquivos ou no iCloud Drive).'}</p>
       <button class="ajuste clicavel" data-acao="exportar"><span>📤 Exportar backup (.json)</span>${ICONE_SETA_DIR}</button>
       <button class="ajuste clicavel" data-acao="importar"><span>📥 Importar backup</span>${ICONE_SETA_DIR}</button>
       <input type="file" id="input-importar" class="oculto" aria-hidden="true">

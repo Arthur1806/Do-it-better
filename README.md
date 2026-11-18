@@ -4,9 +4,20 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 - HTML, CSS e JavaScript puros: sem framework, sem npm, sem build.
 - Funciona offline e se instala na Tela de Início do iPhone como um app nativo.
-- Os dados ficam **só no seu aparelho** (localStorage). Não tem login nem servidor. Faça backup pelo Perfil.
+- Funciona sem conta (dados só no aparelho) ou com conta grátis (v5.1): progresso na nuvem, ranking, amigos e grupos.
 
 ---
+
+## Novidades da versão 5.1 — Online 🌎
+
+- **Conta e nuvem:** crie uma conta com **e-mail, senha e nick** (aba **🏆 Social**). Não mandamos e-mail: na hora você recebe um **código de recuperação** — guarde (print!) para trocar a senha se esquecer.
+- **Seu progresso na nuvem:** o jogo continua funcionando offline e salvando no aparelho; logado, cada mudança sobe sozinha para a nuvem alguns segundos depois. Trocou de celular? Entre na conta e tudo volta. Se dois aparelhos mudarem ao mesmo tempo, vale o mais recente (o outro fica como cópia de segurança).
+- **Ranking geral da semana** com todo mundo que usa o app (zera toda segunda) e **ranking só dos amigos**. Dá para sair do ranking geral em Social → Conta.
+- **Amigos:** busque por **@nick**, **e-mail exato** ou **código de amigo**; pedidos com aceitar/recusar; **convite pelo WhatsApp** com link (`?amigo=nick`). Quem abre o link vê como instalar e o convite já fica pronto para colar.
+- **Perfil público:** toque num jogador para ver o personagem, o pet (com a mutação e o fogo), nível, XP da semana, sequência e liga.
+- **Grupos privados** (família, academia, trabalho...) só com amigos, cada um com o seu ranking semanal.
+- **Privacidade:** pendências, notas, gastos e compras nunca aparecem para ninguém. Botão **Excluir conta** apaga tudo da nuvem.
+- Detalhes do servidor em [`supabase/LEIAME.md`](supabase/LEIAME.md).
 
 ## Novidades da versão 5.0 — Evolução 🔥
 
@@ -124,6 +135,9 @@ do-it-better/
     ├── fogo.js             ← aura de fogo em pixel art (simulação de chamas em quadros)
     ├── mutacao.js          ← mutações do pet (regras, custo em DNA e desenho por camadas)
     ├── desafios.js         ← desafios semanais e DNA 🧬
+    ├── nuvem.js            ← conexão com o servidor (login, sessão, chamadas ao banco) sem biblioteca
+    ├── sync.js             ← sincronização offline-primeiro do save + perfil público
+    ├── social.js           ← aba Social: ranking, amigos, grupos, conta e convite pelo link
     ├── visual.js           ← personalização do personagem, raridades, desbloqueios e evolução física
     ├── visual-padrao.js    ← visual inicial do personagem
     ├── pet.js              ← necessidades do pet (comida, água, força, limpeza, alegria) e cuidados

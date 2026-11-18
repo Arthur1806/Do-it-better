@@ -26,6 +26,7 @@ const CHAVE_BACKUP = 'doitbetter:backup-anterior';
 let estado = null;
 let primeiraVez = false;
 const ouvintes = new Set();
+const gravacoes = new Set(); // avisados em TODA gravação (inclusive as silenciosas) — usado pela nuvem
 
 /** Estrutura completa dos dados com valores padrão. */
 export function estadoPadrao() {
@@ -102,6 +103,7 @@ export function estadoPadrao() {
       metaAgua: 8, // copos por dia
       limiteGastos: 0, // 0 = sem limite
       sons: true,
+      noRanking: true, // aparecer no ranking geral (v5.1)
     },
     // XP: lançamentos individuais (permite desfazer sem duplicar pontos)
     xp: {
@@ -358,7 +360,18 @@ export function salvar(opcoes = {}) {
     // Avisa a interface (o app mostra um toast)
     window.dispatchEvent(new CustomEvent('dib-erro-salvar', { detail: e }));
   }
+  gravacoes.forEach((fn) => {
+    try {
+      fn();
+    } catch (_) {}
+  });
   if (!opcoes.silencioso) ouvintes.forEach((fn) => fn());
+}
+
+/** Registra uma função chamada a cada gravação no aparelho (até as silenciosas). */
+export function aoGravar(fn) {
+  gravacoes.add(fn);
+  return () => gravacoes.delete(fn);
 }
 
 /** Altera os dados dentro de uma função e salva em seguida. */

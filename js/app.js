@@ -29,6 +29,9 @@ import * as tarefas from './tarefas.js';
 import * as treinos from './treinos.js';
 import * as petaba from './petaba.js';
 import * as perfil from './perfil.js';
+import * as social from './social.js';
+import { iniciarSync } from './sync.js';
+import * as Nuvem from './nuvem.js';
 import { abrirNotas } from './extras.js';
 import { contagens } from './pendencias.js';
 
@@ -148,7 +151,19 @@ registrarAba('hoje', painel);
 registrarAba('tarefas', tarefas);
 registrarAba('treinos', treinos);
 registrarAba('pet', petaba);
+registrarAba('social', social);
 registrarAba('perfil', perfil);
+iniciarSync(); // nuvem: só faz algo se a pessoa tiver entrado na conta
+document.addEventListener('dib-ir', (e) => irPara(e.detail.aba, e.detail));
+window.addEventListener('dib-nuvem-baixou', () => {
+  // o progresso veio de outro aparelho: redesenha tudo
+  atualizarBadges();
+  renderizarAtual();
+});
+// avisos de pedidos de amizade (a cada 2 minutos, só logado)
+const checarPedidos = () => Nuvem.logado() && social.atualizarAvisos().then(() => atualizarBadges()).catch(() => {});
+setTimeout(checarPedidos, 2500);
+setInterval(checarPedidos, 120000);
 
 document.getElementById('tabbar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-aba]');
@@ -174,7 +189,7 @@ document.addEventListener('dib-redesenhar-badges', () => atualizarBadges());
 
 // Botão "+" só aparece onde se cria coisa (Hoje, Tarefas e Treinos)
 document.addEventListener('dib-aba', (e) => {
-  document.getElementById('fab').classList.toggle('escondido', e.detail === 'perfil' || e.detail === 'pet');
+  document.getElementById('fab').classList.toggle('escondido', ['perfil', 'pet', 'social'].includes(e.detail));
   atualizarBadges();
 });
 
@@ -198,6 +213,7 @@ function atualizarBadges() {
   marcar('tarefas', faltam ? String(faltam) : '', c.atrasadas > 0);
   marcar('treinos', d.treinos.emAndamento ? true : '');
   marcar('pet', petPrecisa || novosNaColecao() + d.visualNovos.length > 0 ? true : '', !!petPrecisa);
+  marcar('social', social.pedidosRecebidos() ? String(social.pedidosRecebidos()) : '');
   marcar('perfil', '');
   // ícone da aba Pet = o seu pet em pixel art
   const iconePet = document.querySelector('.tabbar [data-aba="pet"] .tab-pet');
@@ -294,7 +310,8 @@ function iniciar() {
     Store.salvar({ silencioso: true });
   }
   talvezCriarPersonagem();
-  talvezMostrarNovidades();
+  if (!social.tratarConviteDoLink()) talvezMostrarNovidades();
+  setTimeout(() => social.talvezVincular(), 1200);
   talvezAvisarPerdaMutacao();
 }
 if (!d.meta.onboardingFeito) {
@@ -307,6 +324,7 @@ if (!d.meta.onboardingFeito) {
     irPara('hoje');
     atualizarBadges();
     talvezCriarPersonagem();
+    setTimeout(() => social.tratarConviteDoLink(), 1500);
   }, { once: true });
   pronto = true;
 } else {

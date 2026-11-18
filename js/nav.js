@@ -1,17 +1,16 @@
 // =============================================================
-// nav.js — navegação entre as 5 abas (Hoje, Tarefas, Treinos, Pet,
-// Perfil).
+// nav.js — navegação entre as 6 abas (Hoje, Tarefas, Treinos, Pet,
+// Social, Perfil).
 // • Transição na direção da aba (desliza para a esquerda/direita).
 // • Indicador luminoso que corre pela barra de abas.
 // • Barra de título compacta que aparece ao rolar a tela.
-// • Deslizar o dedo para os lados troca de aba.
 // Cada aba é um módulo com:
 //   montar(el)            -> chamado uma vez (liga eventos)
 //   render(el, params)    -> desenha a tela
 // =============================================================
 
-const ORDEM = ['hoje', 'tarefas', 'treinos', 'pet', 'perfil'];
-const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treinos', pet: 'Pet', perfil: 'Perfil' };
+const ORDEM = ['hoje', 'tarefas', 'treinos', 'pet', 'social', 'perfil'];
+const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treinos', pet: 'Pet', social: 'Social', perfil: 'Perfil' };
 
 // Atalhos antigos continuam funcionando:
 //   'rotina' e 'pendencias' agora são seções da aba Tarefas;
