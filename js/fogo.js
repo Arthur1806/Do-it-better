@@ -45,20 +45,22 @@ const NIVEIS = 6; // níveis de calor (0 = sem fogo)
  * @param {string} [o.paleta='fogo']
  * @param {number} [o.duracao=0.9] segundos para passar por todos os quadros
  */
-export function fogoSVG(grade, { intensidade = 1, topo, lado, paleta = 'fogo', duracao = 0.9, semente = 7 } = {}) {
+export function fogoSVG(grade, { intensidade = 1, topo, lado, paleta = 'fogo', duracao = 0.9, semente = 7, espessura } = {}) {
   const A = grade.length;
   const L = grade[0].length;
   topo = topo ?? Math.round(4 + 6 * intensidade);
   lado = lado ?? Math.round(2 + 2 * intensidade);
-  const chave = `${grade.map((r) => r.join('')).join('|')}:${intensidade}:${topo}:${lado}:${paleta}:${semente}`;
-  if (!cache.has(chave)) cache.set(chave, gerar(grade, { A, L, intensidade, topo, lado, paleta, semente }));
+  // quantos pixels de fogo "colados" no corpo (os lados também pegam fogo)
+  espessura = espessura ?? (intensidade >= 1.2 ? 2 : 1);
+  const chave = `${grade.map((r) => r.join('')).join('|')}:${intensidade}:${topo}:${lado}:${paleta}:${semente}:${espessura}`;
+  if (!cache.has(chave)) cache.set(chave, gerar(grade, { A, L, intensidade, topo, lado, paleta, semente, espessura }));
   const { svgQuadros, cw, ch } = cache.get(chave);
   // posição relativa ao desenho (que mede L+2 x A+2 por causa do contorno)
   const estilo = `left:${(-lado / (L + 2)) * 100}%;top:${(-topo / (A + 2)) * 100}%;width:${(cw / (L + 2)) * 100}%;height:${(ch / (A + 2)) * 100}%;--dur:${duracao}s`;
   return `<svg class="fogo" viewBox="0 0 ${cw} ${ch}" preserveAspectRatio="none" shape-rendering="crispEdges" aria-hidden="true" style="${estilo}">${svgQuadros}</svg>`;
 }
 
-function gerar(grade, { A, L, intensidade, topo, lado, paleta, semente }) {
+function gerar(grade, { A, L, intensidade, topo, lado, paleta, semente, espessura }) {
   const pal = PALETAS_FOGO[paleta] || PALETAS_FOGO.fogo;
   const base = 1;
   const cw = L + 2 + lado * 2;
@@ -78,6 +80,19 @@ function gerar(grade, { A, L, intensidade, topo, lado, paleta, semente }) {
   // a parte de baixo do corpo (pés) quase não solta fogo
   let yBaixo = 0;
   for (let y = 0; y < ch; y++) if (mask[y].some(Boolean)) yBaixo = y;
+  // camada de chamas colada no corpo: distância (em pixels) até a máscara
+  const perto = Array.from({ length: ch }, () => new Array(cw).fill(0));
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+    if (mask[y][x]) continue;
+    for (let dd = 1; dd <= espessura && !perto[y][x]; dd++) {
+      for (let dy = -dd; dy <= dd && !perto[y][x]; dy++) for (let dx = -dd; dx <= dd; dx++) {
+        if (mask[y + dy] && mask[y + dy][x + dx]) {
+          perto[y][x] = dd;
+          break;
+        }
+      }
+    }
+  }
   const r = rng(semente * 7919 + A * 31 + L);
   // quantos níveis de calor se perdem a cada pixel que sobe (em média):
   // mais intensidade = chamas mais altas
@@ -97,6 +112,14 @@ function gerar(grade, { A, L, intensidade, topo, lado, paleta, semente }) {
     for (let y = ch - 2; y >= 0; y--) {
       for (let x = 0; x < cw; x++) {
         if (mask[y][x]) continue;
+        if (perto[y][x] && y <= yBaixo - 2) {
+          // pixels colados no corpo também queimam (mais fraco quanto mais longe)
+          const v = NIVEIS - perto[y][x] - (r() < 0.45 ? 1 : 0);
+          if (v > 0) {
+            novo[y][x] = Math.max(v, novo[y + 1][x] - inteiro);
+            continue;
+          }
+        }
         // o calor vem de baixo, com um balanço para os lados (vento)
         const t = r();
         const desvio = t < 0.25 ? -1 : t > 0.75 ? 1 : 0;

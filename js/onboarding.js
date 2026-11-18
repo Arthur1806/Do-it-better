@@ -309,9 +309,9 @@ const TELAS = {
     html: `<div class="onb-hero">
         <img src="icons/icon-192.png" alt="" class="onb-icone">
         <h1 class="logo grande">Do It Better</h1>
-        <p class="onb-lead">Transforme sua rotina num jogo. Ganhe XP, suba de nível, cumpra missões e desbloqueie personagens.</p>
+        <p class="onb-lead">Transforme sua rotina num jogo. Ganhe XP, suba de nível, cumpra desafios e desbloqueie personagens.</p>
         <div class="onb-beneficios">
-          <div><span>🎯</span>Missões e baú todo dia</div>
+          <div><span>🎯</span>Desafios diários e semanais</div>
           <div><span>🔥</span>Sequências que multiplicam seu XP</div>
           <div><span>🐾</span>Um pet que depende de você</div>
           <div><span>🧑‍🎤</span>Personagem com skins exclusivas</div>

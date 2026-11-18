@@ -1426,3 +1426,42 @@ svg.pixel {
 .cena .cena-pet .avatar.mutante {
   margin-left: calc(var(--tam) * 0.12 * var(--escala, 1));
 }
+
+/* ---------- v5: fogo em volta do personagem ---------- */
+.personagem > svg.fogo {
+  position: absolute;
+  z-index: 0;
+}
+.personagem > svg.avatar-pixel {
+  position: relative;
+  z-index: 1;
+}
+/* com o fogo de pixel art, a aura antiga fica só como brilho de fundo */
+.fisico-4 .aura-guerreiro { opacity: 0.55; }
+.fisico-5 .aura-guerreiro { opacity: 0.7; }
+.fisico-6 .aura-guerreiro {
+  opacity: 0.85;
+  width: 150%;
+  height: 130%;
+  bottom: -8%;
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(253, 224, 71, 0.9), transparent 40%),
+    radial-gradient(ellipse at 50% 55%, rgba(239, 68, 68, 0.75), transparent 70%);
+  filter: blur(3px);
+  animation: aura-fogo 0.9s ease-in-out infinite;
+}
+.fisico-6 > svg.avatar-pixel {
+  filter: drop-shadow(0 0 1.5px #fde68a) drop-shadow(0 0 6px rgba(249, 115, 22, 1)) drop-shadow(0 0 14px rgba(239, 68, 68, 0.8));
+  animation: aura-pulso-fogo 1s ease-in-out infinite;
+}
+.fisico-6 .faiscas i { background: #fde047; box-shadow: 0 0 6px #f97316; }
+.fisico-4 > svg.fogo, .fisico-5 > svg.fogo, .fisico-6 > svg.fogo { filter: drop-shadow(0 0 3px rgba(251, 146, 60, 0.6)); animation: none; }
+.fisico-5 > svg.fogo { filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.7)); }
+/* 6 físicos: 3 por linha */
+.evolucao-fisica { grid-template-columns: repeat(3, 1fr); row-gap: 8px; }
+.evolucao-fisica .mini-fisico .avatar-pixel.mini { width: 46px; }
+/* palco da tela Hoje: espaço para as chamas não cobrirem a saudação */
+.palco-heroi.fisico-palco-4 { padding-top: 26px; }
+.palco-heroi.fisico-palco-5 { padding-top: 32px; }
+.palco-heroi.fisico-palco-6 { padding-top: 54px; }
+.placar-heroi .placar-saudacao { position: relative; z-index: 2; }

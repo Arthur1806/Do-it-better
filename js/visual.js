@@ -13,7 +13,9 @@ import { emitir, esc } from './utils.js';
 import { nivelInfo, nivelDesbloqueio } from './xp.js';
 import { sequenciaRotina } from './historico.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
-import { CORPO, ROUPAS, CALCAS, CABELOS, CHAPEUS, ACESSORIOS, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
+import { svgDaGrade, sombrear, misturar } from './pixel.js';
+import { gradeBoneco } from './boneco.js';
+import { fogoSVG } from './fogo.js';
 
 export const RARIDADES = {
   comum: { nome: 'Comum', cor: '#94a3b8' },
@@ -60,12 +62,18 @@ export const ESTILOS = {
     { id: 'armadura', nome: 'Armadura', r: 'epico', d: loja(800) },
     { id: 'heroi', nome: 'Traje de herói', r: 'lendario', d: nivel(35) },
     { id: 'terno', nome: 'Terno de gala', r: 'lendario', d: { tipo: 'liga', n: 5, texto: 'Chegue à liga Mestre' } },
+    { id: 'time', nome: 'Camisa de time', r: 'raro', d: loja(180) },
+    { id: 'couro', nome: 'Jaqueta de couro', r: 'epico', d: { tipo: 'semanas', n: 2 } },
+    { id: 'kimono', nome: 'Kimono', r: 'epico', d: { tipo: 'semanas', n: 5 } },
+    { id: 'ninja', nome: 'Traje ninja', r: 'lendario', d: { tipo: 'semanas', n: 10 } },
   ],
   calca: [
     { id: 'calca', nome: 'Calça', r: 'comum', d: G },
     { id: 'shorts', nome: 'Shorts', r: 'comum', d: G },
     { id: 'saia', nome: 'Saia', r: 'comum', d: G },
     { id: 'jogger', nome: 'Jogger', r: 'raro', d: loja(80) },
+    { id: 'cargo', nome: 'Bermuda cargo', r: 'raro', d: loja(90) },
+    { id: 'rasgada', nome: 'Calça rasgada', r: 'raro', d: loja(120) },
   ],
   chapeu: [
     { id: 'nenhum', nome: 'Nenhum', r: 'comum', d: G },
@@ -86,6 +94,9 @@ export const ESTILOS = {
     { id: 'bigode', nome: 'Bigode', r: 'comum', d: G },
     { id: 'escuros', nome: 'Óculos escuros', r: 'raro', d: loja(150) },
     { id: 'fone', nome: 'Fone gamer', r: 'epico', d: nivel(6) },
+    { id: 'cicatriz', nome: 'Cicatriz de batalha', r: 'raro', d: nivel(10) },
+    { id: 'mascara', nome: 'Máscara ninja', r: 'epico', d: { tipo: 'semanas', n: 8 } },
+    { id: 'corrente', nome: 'Corrente de ouro', r: 'lendario', d: { tipo: 'prestigio', n: 1 } },
   ],
 };
 
@@ -254,10 +265,10 @@ const hexDe = (cat, valor, padrao) => {
 };
 
 /** Paleta completa a partir da configuração. */
-function paletaDe(cfg) {
+function paletaDe(cfg, fisico = 1) {
   const pele = hexDe('pele', cfg.pele, '#f1c27d');
   const cabelo = hexDe('corCabelo', cfg.corCabelo, '#5b3a29');
-  return {
+  const pal = {
     S: pele,
     s: sombrear(pele, 0.16),
     B: misturar(pele, '#ff6b81', 0.35),
@@ -284,7 +295,16 @@ function paletaDe(cfg) {
     U: '#f97316',
     u: '#fde047',
     X: '#67e8f9', // olhos brilhando (físico Imparável)
+    K: '#141821', // sombra do terno / jaqueta de couro
+    f: '#e5e7eb', // sola do tênis
   };
+  // tênis claro ganha sola cinza (senão a sola some)
+  const n = parseInt(pal.F.slice(1), 16);
+  const luz = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  if (luz > 0.75) pal.f = '#9ca3af';
+  // olhos da Lenda em Chamas: brasa amarela
+  if (fisico >= 6) pal.X = '#fde047';
+  return pal;
 }
 
 // -------------------------------------------------------------
@@ -313,103 +333,29 @@ export function fisicoAtual() {
   return piso && piso.n > f.n ? piso : f;
 }
 
-/** Aplica músculos, expressão e brilho do físico na grade. */
-function aplicarFisico(g, n) {
-  const get = (x, y) => (g[y] && g[y][x] !== undefined ? g[y][x] : '.');
-  const set = (x, y, ch) => {
-    if (y >= 0 && y < g.length && x >= 0 && x < 16) g[y][x] = ch;
-  };
-  if (n >= 2) {
-    // bíceps mais largos e sobrancelhas
-    for (const y of [12, 13]) {
-      set(1, y, get(2, y));
-      set(14, y, get(13, y));
-    }
-    if (get(5, 4) === 'S') set(5, 4, 'E');
-    if (get(10, 4) === 'S') set(10, 4, 'E');
-  }
-  if (n >= 3) {
-    // ombros largos, antebraços fortes, pescoço grosso, cara séria
-    set(2, 11, get(3, 11));
-    set(13, 11, get(12, 11));
-    set(1, 14, 'S');
-    set(14, 14, 'S');
-    if (get(5, 10) === '.') set(5, 10, 's');
-    if (get(10, 10) === '.') set(10, 10, 's');
-    // sobrancelhas franzidas (em "V") e olhar estreito: cara de bravo
-    const rosto = (x, y) => ['S', 'E', 'B'].includes(get(x, y));
-    if (rosto(4, 4) && rosto(11, 4)) {
-      set(6, 4, 'S');
-      set(9, 4, 'S');
-      set(4, 4, 'E');
-      set(11, 4, 'E');
-      set(6, 5, 'E');
-      set(9, 5, 'E');
-      set(5, 5, 'S');
-      set(10, 5, 'S');
-    }
-    if (get(7, 8) === 'M') {
-      set(7, 8, 'k');
-      set(8, 8, 'k');
-    }
-  }
-  if (n >= 4) {
-    // corpo de guerreiro e pintura de batalha
-    set(1, 11, get(2, 11));
-    set(14, 11, get(13, 11));
-    for (const y of [15, 16, 17]) {
-      set(2, y, get(3, y));
-      set(13, y, get(12, y));
-    }
-    set(2, 18, 'F');
-    set(13, 18, 'F');
-    // pintura de guerra (2 riscos em cada bochecha) e boca cerrada
-    for (const [x, y] of [[4, 7], [5, 7], [10, 7], [11, 7]]) if (['S', 'B'].includes(get(x, y))) set(x, y, 'R');
-    if (get(6, 8) === 'S' && get(7, 8) === 'k') set(6, 8, 'k');
-    if (get(9, 8) === 'S' && get(8, 8) === 'k') set(9, 8, 'k');
-    // faixa de guerreiro na testa (só se a testa estiver à mostra)
-    let testa = 0;
-    for (let x = 4; x <= 11; x++) if (['S', 'h'].includes(get(x, 3))) testa++;
-    if (testa >= 6) {
-      for (let x = 3; x <= 12; x++) if (['S', 'h', 'H'].includes(get(x, 3))) set(x, 3, 'R');
-      set(13, 3, 'R');
-      set(14, 4, 'R');
-      set(13, 4, 'R');
-    }
-  }
-  if (n >= 5) {
-    // olhos brilhando
-    for (let y = 5; y <= 6; y++) for (let x = 0; x < 16; x++) if (g[y][x] === 'E' && !(y === 5 && (x === 6 || x === 9))) g[y][x] = 'X';
-  }
-  return g;
-}
-
-/** Grade (16x20) do personagem. */
+/** Grade (24x32) do personagem, já com o físico (molde do corpo e rosto). */
 export function gradeAvatar(cfg = dados().avatar, fisico = fisicoAtual().n) {
-  const c = { ...AVATAR_PADRAO, ...cfg };
-  const roupa = ROUPAS[c.roupa] || ROUPAS.camiseta;
-  const camadas = [];
-  if (roupa.atras) camadas.push(roupa.atras);
-  camadas.push({ linhas: CORPO });
-  camadas.push(CALCAS[c.calca] || CALCAS.calca);
-  camadas.push(roupa);
-  camadas.push(CABELOS[c.cabelo] || CABELOS.curto);
-  camadas.push(ACESSORIOS[c.acessorio] || ACESSORIOS.nenhum);
-  camadas.push(CHAPEUS[c.chapeu] || CHAPEUS.nenhum);
-  return aplicarFisico(compor(camadas, 16, 20), fisico);
+  return gradeBoneco({ ...AVATAR_PADRAO, ...cfg }, fisico);
 }
 
 /** SVG do personagem (só o desenho). */
 export function avatarSVG(cfg = dados().avatar, classe = '', { fisico } = {}) {
   const c = { ...AVATAR_PADRAO, ...cfg };
-  return svgDaGrade(gradeAvatar(c, fisico || fisicoAtual().n), paletaDe(c), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
+  const f = fisico || fisicoAtual().n;
+  return svgDaGrade(gradeAvatar(c, f), paletaDe(c, f), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
 }
 
-/** Personagem com a aura do físico (fogo no Guerreiro, energia no Imparável). */
-export function personagemHTML(cfg = dados().avatar, { classe = '', fisico } = {}) {
+/** Fogo em pixel art por físico: brasas (Guerreiro), energia azul (Imparável) e inferno (Lenda). */
+const FOGO_FISICO = { 4: { intensidade: 0.5, paleta: 'fogo' }, 5: { intensidade: 0.95, paleta: 'azul', duracao: 0.8 }, 6: { intensidade: 1.5, paleta: 'fogo', duracao: 0.75 } };
+
+/** Personagem com a aura do físico (brasas no Guerreiro, energia no Imparável, fogo na Lenda). */
+export function personagemHTML(cfg = dados().avatar, { classe = '', fisico, semFogo = false } = {}) {
   const f = fisico || fisicoAtual().n;
+  const c = { ...AVATAR_PADRAO, ...cfg };
+  const fogo = !semFogo && FOGO_FISICO[f] ? fogoSVG(gradeAvatar(c, f), { ...FOGO_FISICO[f], semente: 11 + f }) : '';
   return `<span class="personagem fisico-${f}">
     <span class="aura-guerreiro" aria-hidden="true"></span>
+    ${fogo}
     ${avatarSVG(cfg, classe, { fisico: f })}
     ${f >= 4 ? '<span class="faiscas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' : ''}
   </span>`;

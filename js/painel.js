@@ -30,7 +30,7 @@ import { BLOCOS_FIXOS } from './seed.js';
 import { companheiro, avatarHTML, humor, fala, estagioDoNivel } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
 import { desafiosDaSemana, resgatarDesafio, diasParaRenovar } from './desafios.js';
-import { pocaoAtiva, bonusPocao } from './xp.js';
+import { pocaoAtiva, bonusPocao, podePrestigio } from './xp.js';
 import { cenaHTML, barrasPetHTML } from './telas-personagem.js';
 import { fisicoAtual } from './visual.js';
 import { estadoPet, bonusPet, cuidar } from './pet.js';
@@ -715,7 +715,7 @@ export function render(el, params = {}) {
         <div class="placar-xp">
           <div class="placar-titulo"><span>${info.titulo}${fis.n > 1 ? ` · ${fis.nome}` : ''}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +${bonusPocao()}%</span>` : ''}${bonusPet() ? '<span class="tag tag-pet">🐾 +5%</span>' : ''}</div>
           <div class="barra-xp"><div class="barra-xp-fill" style="width:${pctInicial}%"></div></div>
-          <small>${info.xpNoNivel} / ${info.xpParaProximo} XP · faltam ${info.falta}</small>
+          <small>${info.maximo ? `Nível máximo! ${podePrestigio() ? '⭐ Faça o prestígio no Perfil' : `${formatarNumero(info.xpNoNivel)} XP além do 50`}` : `${formatarNumero(info.xpNoNivel)} / ${formatarNumero(info.xpParaProximo)} XP · faltam ${formatarNumero(info.falta)}`}</small>
         </div>
         <div class="pontos-dia"><strong>${xpHoje}</strong><small>XP hoje</small></div>
       </div>

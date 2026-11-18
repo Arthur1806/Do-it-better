@@ -8,6 +8,19 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 5.0 — Evolução 🔥
+
+- **Jornada mais longa e desafiadora:** o nível máximo agora é o **50** (cerca de um ano de uso diário). Cada nível pede um pouco mais de XP: `90 × N^1,1` (mínimo 100). Quem já jogava **não perde nível nem físico** (a conversão faz um ajuste automático).
+- **⭐ Prestígio:** no nível 50 dá para recomeçar a contagem de níveis e ganhar uma estrela (+5% de XP para sempre, até 5). Tudo o que já foi liberado continua liberado.
+- **🎯 Desafios diários e semanais:** os 3 desafios do dia continuam; toda segunda chegam **4 desafios da semana** (rotina 100% em 5 dias, treinos, água, pet, XP da semana...). Pagam XP, moedas e **DNA 🧬**. Resgatar os 4 dá o baú da semana (+250 XP, +150 moedas, +3 DNA e um escudo) e conta para itens exclusivos.
+- **🧬 Mutações do pet:** com nível e DNA o pet muta: **Filhote → Mutante (nív. 8, 5 DNA) → Fera (nív. 20, 20 DNA) → Fera Suprema (nív. 35, 40 DNA)**. Cada estágio deixa o pet maior e mais bravo (olhos vermelhos, presas, chifres, garras, espinhos, cicatriz) e com uma **aura de fogo animada** em pixel art.
+- **💔 Castigo:** se a comida **ou** a água do pet chegarem a zero (alguns dias abandonado), ele **perde um estágio de mutação**. Voltar a um estágio que ele já teve custa metade do DNA.
+- **DNA também vem do pet:** a cada 3 dias seguidos terminando com o pet bem cuidado (tudo ≥ 70), +1 DNA.
+- **👕 Personagem redesenhado em 24 × 32:** corpo com 4 moldes (franzino → muito musculoso), roupas com mangas, golas, botões, zíper, bolsos e sombras, calças com cinto e costuras, tênis com sola e cadarço.
+- **Peças novas:** camisa de time, jaqueta de couro, kimono, traje ninja, bermuda cargo, calça rasgada, cicatriz, máscara ninja e corrente de ouro (várias liberam completando semanas de desafios).
+- **🔥 Forma final do personagem:** físicos nos níveis 5, 12, 22, 35 e **50 — Lenda em Chamas**, com fogo de verdade em volta (simulação de chamas em pixel art, vários quadros animados). O Guerreiro tem brasas e o Imparável, energia azul.
+- Esquema de dados 5 (migração automática).
+
 ## Novidades da versão 4.1
 
 - **Personagem e pet em destaque na tela Hoje:** um palco grande no topo, com o seu boneco e o pet lado a lado, nomes, nível, estágio do pet, fala e as necessidades.
@@ -106,12 +119,16 @@ do-it-better/
     ├── petaba.js           ← aba Pet (Cuidar, Personagem, Loja, Coleção)
     ├── onboarding.js       ← questionário de primeira entrada (monta o app para você)
     ├── personagens.js      ← pets (pixel art), skins, evolução, coleção, humor e falas
-    ├── pixel.js            ← motor de pixel art em SVG + desenhos do personagem e dos pets
+    ├── pixel.js            ← motor de pixel art em SVG + desenhos dos pets
+    ├── boneco.js           ← o personagem 24x32: moldes do corpo, roupas como regras, cabelos, chapéus e acessórios
+    ├── fogo.js             ← aura de fogo em pixel art (simulação de chamas em quadros)
+    ├── mutacao.js          ← mutações do pet (regras, custo em DNA e desenho por camadas)
+    ├── desafios.js         ← desafios semanais e DNA 🧬
     ├── visual.js           ← personalização do personagem, raridades, desbloqueios e evolução física
     ├── visual-padrao.js    ← visual inicial do personagem
     ├── pet.js              ← necessidades do pet (comida, água, força, limpeza, alegria) e cuidados
     ├── telas-personagem.js ← criador do personagem, cena personagem + pet, cuidar do pet
-    ├── missoes.js          ← missões do dia, baú diário e ligas semanais
+    ├── missoes.js          ← desafios do dia (missões), baú diário e ligas semanais
     ├── loja.js             ← itens (escudo, poção) e temas de cor
     └── sons.js             ← efeitos sonoros gerados na hora (sem arquivos de áudio)
 ```
@@ -130,13 +147,14 @@ do-it-better/
 | Recorde de carga no treino | +50 |
 | Meta de água do dia | 15 |
 
-- **Nível N** precisa de **100 × N XP** para passar ao próximo.
+- Para passar do **nível N** ao próximo: **90 × N^1,1 XP** (mínimo 100). Nível máximo: **50**; depois, prestígio ⭐.
 - **Multiplicador:** a cada 7 dias seguidos com a rotina 100% → +10% de XP (máximo +50%). Falhou um dia, zera. Dias sem itens programados não contam nem quebram.
 - **Desfazer** sempre remove o XP (e as moedas que ele deu) — não há pontos duplicados.
 - **Escudo de sequência:** se você falhar a rotina num dia e tiver escudo, ele é usado sozinho na virada do dia e a sequência continua (o dia aparece com 🛡️ no calendário).
 - **Moedas:** 1 a cada 10 XP; missões 10–20; baú diário 10–70 (cresce com a presença); medalhas 🥉10 · 🥈25 · 🥇60 · 💎150; carinho no companheiro 5 por dia.
 - **Pet:** comida e água caem com o tempo (a comida dura ~3 dias, a água ~2). Compre na aba **Pet → Cuidar** com moedas (ou use o que tem na mochila).
-- **Físico do personagem:** muda nos níveis 3, 6, 10 e 20.
+- **Físico do personagem:** muda nos níveis 5, 12, 22, 35 e 50.
+- **Mutações do pet:** nível + DNA 🧬; perde um estágio se a comida ou a água chegarem a zero.
 - Todos os valores podem ser mudados em **Perfil → Ajustes → Valores de XP**.
 
 ---
