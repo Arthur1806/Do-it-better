@@ -10,7 +10,7 @@
 
 import { dados } from './store.js';
 import { emitir, esc } from './utils.js';
-import { nivelInfo } from './xp.js';
+import { nivelInfo, nivelDesbloqueio } from './xp.js';
 import { sequenciaRotina } from './historico.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
 import { CORPO, ROUPAS, CALCAS, CABELOS, CHAPEUS, ACESSORIOS, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
@@ -45,7 +45,7 @@ export const ESTILOS = {
     { id: 'careca', nome: 'Careca', r: 'comum', d: G },
     { id: 'coque', nome: 'Coque', r: 'raro', d: loja(120) },
     { id: 'cacheado', nome: 'Cacheado', r: 'raro', d: loja(150) },
-    { id: 'moicano', nome: 'Moicano', r: 'epico', d: nivel(6) },
+    { id: 'moicano', nome: 'Moicano', r: 'epico', d: nivel(8) },
     { id: 'trancas', nome: 'Tranças', r: 'epico', d: { tipo: 'sequencia', n: 14 } },
     { id: 'chamas', nome: 'Cabelo de fogo', r: 'lendario', d: { tipo: 'sequencia', n: 30 } },
   ],
@@ -55,10 +55,10 @@ export const ESTILOS = {
     { id: 'moletom', nome: 'Moletom', r: 'comum', d: G },
     { id: 'listrada', nome: 'Listrada', r: 'raro', d: loja(120) },
     { id: 'social', nome: 'Camisa social', r: 'raro', d: loja(150) },
-    { id: 'jaqueta', nome: 'Jaqueta', r: 'raro', d: nivel(4) },
+    { id: 'jaqueta', nome: 'Jaqueta', r: 'raro', d: nivel(5) },
     { id: 'atleta', nome: 'Regata de atleta', r: 'epico', d: { tipo: 'treinos', n: 10 } },
     { id: 'armadura', nome: 'Armadura', r: 'epico', d: loja(800) },
-    { id: 'heroi', nome: 'Traje de herói', r: 'lendario', d: nivel(20) },
+    { id: 'heroi', nome: 'Traje de herói', r: 'lendario', d: nivel(35) },
     { id: 'terno', nome: 'Terno de gala', r: 'lendario', d: { tipo: 'liga', n: 5, texto: 'Chegue à liga Mestre' } },
   ],
   calca: [
@@ -73,7 +73,7 @@ export const ESTILOS = {
     { id: 'gorro', nome: 'Gorro', r: 'comum', d: G },
     { id: 'boneVirado', nome: 'Boné para trás', r: 'raro', d: loja(100) },
     { id: 'bandana', nome: 'Bandana', r: 'raro', d: loja(120) },
-    { id: 'cowboy', nome: 'Chapéu de cowboy', r: 'epico', d: nivel(8) },
+    { id: 'cowboy', nome: 'Chapéu de cowboy', r: 'epico', d: nivel(18) },
     { id: 'cartola', nome: 'Cartola', r: 'epico', d: loja(450) },
     { id: 'viking', nome: 'Capacete viking', r: 'epico', d: { tipo: 'medalha', id: 'pendencias-2', texto: 'Medalha Resolvedor Prata' } },
     { id: 'coroa', nome: 'Coroa', r: 'lendario', d: { tipo: 'medalha', id: 'semana-perfeita', texto: 'Tenha uma semana perfeita' } },
@@ -85,7 +85,7 @@ export const ESTILOS = {
     { id: 'barba', nome: 'Barba', r: 'comum', d: G },
     { id: 'bigode', nome: 'Bigode', r: 'comum', d: G },
     { id: 'escuros', nome: 'Óculos escuros', r: 'raro', d: loja(150) },
-    { id: 'fone', nome: 'Fone gamer', r: 'epico', d: nivel(5) },
+    { id: 'fone', nome: 'Fone gamer', r: 'epico', d: nivel(6) },
   ],
 };
 
@@ -98,7 +98,7 @@ export const CORES = {
     { id: 'p4', nome: 'Morena', hex: '#c68642', r: 'comum', d: G },
     { id: 'p5', nome: 'Escura', hex: '#8d5524', r: 'comum', d: G },
     { id: 'p6', nome: 'Muito escura', hex: '#5c3a21', r: 'comum', d: G },
-    { id: 'alien', nome: 'Alienígena', hex: '#86efac', r: 'epico', d: nivel(12) },
+    { id: 'alien', nome: 'Alienígena', hex: '#86efac', r: 'epico', d: nivel(18) },
     { id: 'avatar', nome: 'Azul místico', hex: '#93c5fd', r: 'epico', d: loja(400) },
   ],
   corCabelo: [
@@ -111,7 +111,7 @@ export const CORES = {
     { id: 'azul', nome: 'Azul', hex: '#60a5fa', r: 'raro', d: loja(100) },
     { id: 'verde', nome: 'Verde', hex: '#4ade80', r: 'raro', d: loja(100) },
     { id: 'roxo', nome: 'Roxo', hex: '#a78bfa', r: 'raro', d: loja(100) },
-    { id: 'dourado', nome: 'Dourado', hex: '#fcd34d', r: 'lendario', d: nivel(15) },
+    { id: 'dourado', nome: 'Dourado', hex: '#fcd34d', r: 'lendario', d: nivel(25) },
     { id: 'platina', nome: 'Platina neon', hex: '#e0f2fe', r: 'lendario', d: { tipo: 'liga', n: 4, texto: 'Chegue à liga Diamante' } },
   ],
   geral: [
@@ -129,7 +129,7 @@ export const CORES = {
     { id: 'rosa', nome: 'Rosa', hex: '#ec4899', r: 'comum', d: G },
     { id: 'marrom', nome: 'Marrom', hex: '#92400e', r: 'comum', d: G },
     { id: 'neon', nome: 'Verde neon', hex: '#39ff14', r: 'raro', d: loja(150) },
-    { id: 'ouro', nome: 'Ouro', hex: '#fbbf24', r: 'lendario', d: nivel(15) },
+    { id: 'ouro', nome: 'Ouro', hex: '#fbbf24', r: 'lendario', d: nivel(25) },
   ],
 };
 
@@ -176,7 +176,7 @@ export function liberado(cat, item, d = dados()) {
     case 'loja':
       return d.guardaRoupa.includes(idItem(cat, item.id));
     case 'nivel':
-      return nivelInfo(d.xp.total).nivel >= dd.n;
+      return nivelDesbloqueio(d) >= dd.n;
     case 'sequencia':
       return Math.max(d.stats.melhorSequencia || 0, sequenciaRotina()) >= dd.n;
     case 'medalha':
@@ -185,6 +185,10 @@ export function liberado(cat, item, d = dados()) {
       return (d.stats.melhorLiga || 0) >= dd.n;
     case 'treinos':
       return d.treinos.sessoes.length >= dd.n;
+    case 'semanas':
+      return (d.stats.semanasCompletas || 0) >= dd.n;
+    case 'prestigio':
+      return (d.xp.prestigio || 0) >= dd.n;
     default:
       return false;
   }
@@ -204,6 +208,10 @@ export function comoLiberar(item) {
       return `${dd.n} dias seguidos de rotina 100%`;
     case 'treinos':
       return `${dd.n} treinos finalizados`;
+    case 'semanas':
+      return `Complete todos os desafios semanais em ${dd.n} semana${dd.n > 1 ? 's' : ''}`;
+    case 'prestigio':
+      return `${dd.n} estrela${dd.n > 1 ? 's' : ''} de prestígio`;
     default:
       return dd.texto || '';
   }
@@ -286,10 +294,11 @@ function paletaDe(cfg) {
 
 export const FISICOS = [
   { n: 1, nivel: 1, nome: 'Franzino', desc: 'Começando a jornada. Cada dia cumprido deixa você mais forte.' },
-  { n: 2, nivel: 3, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
-  { n: 3, nivel: 6, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
-  { n: 4, nivel: 10, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, aura de fogo.' },
-  { n: 5, nivel: 20, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+  { n: 2, nivel: 5, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
+  { n: 3, nivel: 12, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
+  { n: 4, nivel: 22, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, brasas em volta.' },
+  { n: 5, nivel: 35, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+  { n: 6, nivel: 50, nome: 'Lenda em Chamas', desc: 'A forma final: o corpo inteiro envolto em fogo vivo.' },
 ];
 
 export function fisicoDoNivel(nivel) {
@@ -298,7 +307,10 @@ export function fisicoDoNivel(nivel) {
   return f;
 }
 export function fisicoAtual() {
-  return fisicoDoNivel(nivelInfo(dados().xp.total).nivel);
+  const d = dados();
+  const f = fisicoDoNivel(nivelInfo(d.xp.total).nivel);
+  const piso = FISICOS.find((x) => x.n === (d.xp.fisicoPiso || 1));
+  return piso && piso.n > f.n ? piso : f;
 }
 
 /** Aplica músculos, expressão e brilho do físico na grade. */

@@ -59,7 +59,7 @@ export function atualizarPet(agora = Date.now()) {
   }
   const horas = Math.min(24 * 30, (agora - p.atualizadoEm) / 3600000);
   if (horas < 0.05) return false; // menos de 3 minutos
-  const antes = JSON.stringify([valor('comida'), valor('agua'), valor('forca'), valor('alegria')]);
+  const antes = JSON.stringify([valor('comida'), valor('agua'), valor('forca'), valor('alegria'), p.mutacao || 0]);
   p.comida = lim((p.comida ?? 80) - QUEDA_POR_HORA.comida * horas);
   p.agua = lim((p.agua ?? 80) - QUEDA_POR_HORA.agua * horas);
   // passar fome ou sede enfraquece e entristece
@@ -68,8 +68,16 @@ export function atualizarPet(agora = Date.now()) {
     p.forca = lim(p.forca - 0.9 * carencia * horas);
     p.alegria = lim(p.alegria - 0.6 * carencia * horas);
   }
+  // CASTIGO (v5): comida OU água chegaram a zero → perde um estágio de mutação.
+  // Depois disso só pode perder outro quando voltar a ser alimentado (> 30).
+  if ((p.mutacao || 0) > 0 && !p.travaPerda && (p.comida <= 0.5 || p.agua <= 0.5)) {
+    p.mutacao--;
+    p.travaPerda = true;
+    p.perdeuMutacaoEm = agora;
+  }
+  if (p.travaPerda && p.comida > 30 && p.agua > 30) p.travaPerda = false;
   p.atualizadoEm = agora;
-  return antes !== JSON.stringify([valor('comida'), valor('agua'), valor('forca'), valor('alegria')]);
+  return antes !== JSON.stringify([valor('comida'), valor('agua'), valor('forca'), valor('alegria'), p.mutacao || 0]);
 }
 
 /** Estado atual (flags usadas no desenho e nas falas). */
@@ -111,7 +119,7 @@ export function descricaoEstado(nome) {
   const e = estadoPet();
   const moedas = dados().carteira.moedas;
   const semDinheiro = moedas < ITENS_PET.agua.preco;
-  if ((e.faminto || e.sede) && semDinheiro) return `${nome} está com ${e.faminto ? 'fome' : 'sede'} e você está sem moedas! Cumpra a rotina e as missões para ganhar.`;
+  if ((e.faminto || e.sede) && semDinheiro) return `${nome} está com ${e.faminto ? 'fome' : 'sede'} e você está sem moedas! Cumpra a rotina e os desafios para ganhar.`;
   if (e.faminto && e.sede) return `${nome} está com fome e sede. Compre ração e água (🪙 ${ITENS_PET.comida.preco + ITENS_PET.agua.preco}).`;
   if (e.faminto) return `${nome} está com fome. Uma ração custa 🪙 ${ITENS_PET.comida.preco}.`;
   if (e.sede) return `${nome} está com sede. Água custa 🪙 ${ITENS_PET.agua.preco}.`;
@@ -171,6 +179,10 @@ export function fecharDiaDoPet(status) {
     falhou: { forca: -22, limpeza: -20, alegria: -15 },
     neutro: { forca: -3, limpeza: -8, alegria: -4 },
   };
+  // pet bem cuidado no fim do dia (tudo ≥ 70): a cada 3 dias, +1 DNA 🧬
+  const bemCuidado = NECESSIDADES.every((n) => (p[n.id] ?? 0) >= 70);
+  p.diasBemCuidado = bemCuidado ? (p.diasBemCuidado || 0) + 1 : 0;
+  if (bemCuidado && p.diasBemCuidado % 3 === 0) dados().carteira.dna = (dados().carteira.dna || 0) + 1;
   aplicar(efeitos[status] || efeitos.neutro);
   p.diasSemCuidado = status === 'falhou' ? (p.diasSemCuidado || 0) + 1 : 0;
 }
@@ -220,7 +232,7 @@ export function cuidar(acao) {
   let comprou = false;
   if (!(inv[acao] > 0)) {
     if (d.carteira.moedas < item.preco) {
-      return { ok: false, semMoedas: true, msg: `Sem moedas para ${item.nome} (🪙 ${item.preco}). Cumpra a rotina e as missões para ganhar mais!` };
+      return { ok: false, semMoedas: true, msg: `Sem moedas para ${item.nome} (🪙 ${item.preco}). Cumpra a rotina e os desafios para ganhar mais!` };
     }
     d.carteira.moedas -= item.preco;
     comprou = true;

@@ -2,8 +2,13 @@
 // xp.js — regras de XP e níveis.
 // • Todo XP vira um "lançamento" com ID. Desfazer = remover o lançamento,
 //   então nunca há pontos duplicados.
-// • Nível N precisa de 100 × N XP para passar para o N+1.
-//   Nível 1 -> 2: 100 XP | 2 -> 3: 200 XP | 3 -> 4: 300 XP ...
+// • v5: a curva ficou mais longa. O nível máximo é 50 (cerca de 1 ano de
+//   uso diário). Cada nível pede um pouco mais que o anterior:
+//   XP para passar do nível N = 90 × N^1,1 (mínimo 100, arredondado a 10).
+//   Nível 2: 100 XP · nível 10: ~4.850 · nível 20: ~22 mil · nível 50: ~155 mil.
+// • PRESTÍGIO: no nível 50 dá para recomeçar a contagem de níveis e ganhar
+//   uma estrela ⭐ (+5% de XP cada, até 5). O XP total nunca é apagado:
+//   a contagem passa a partir de xp.basePrestigio.
 // • O multiplicador de sequência é aplicado no momento em que o XP é ganho.
 // =============================================================
 
@@ -16,13 +21,19 @@ import { bonusPet, aoGanharXP, aoPerderXP } from './pet.js';
 export const TITULOS = [
   { nivel: 1, titulo: 'Iniciante' },
   { nivel: 3, titulo: 'Aprendiz' },
-  { nivel: 5, titulo: 'Focado' },
-  { nivel: 7, titulo: 'Disciplinado' },
-  { nivel: 10, titulo: 'Determinado' },
-  { nivel: 15, titulo: 'Imparável' },
-  { nivel: 20, titulo: 'Mestre' },
-  { nivel: 30, titulo: 'Lenda' },
+  { nivel: 6, titulo: 'Focado' },
+  { nivel: 10, titulo: 'Disciplinado' },
+  { nivel: 16, titulo: 'Determinado' },
+  { nivel: 24, titulo: 'Imparável' },
+  { nivel: 32, titulo: 'Mestre' },
+  { nivel: 42, titulo: 'Lenda' },
+  { nivel: 50, titulo: 'Mito' },
 ];
+
+/** Nível máximo (depois dele, só prestígio). */
+export const NIVEL_MAX = 50;
+/** Estrelas de prestígio no máximo (cada uma dá +5% de XP). */
+export const PRESTIGIO_MAX = 5;
 
 export function tituloDoNivel(n) {
   let t = TITULOS[0].titulo;
@@ -30,28 +41,87 @@ export function tituloDoNivel(n) {
   return t;
 }
 
-/** XP acumulado necessário para CHEGAR ao nível n. */
+/** XP para passar do nível n para o n+1. */
+export function xpDoNivel(n) {
+  if (n >= NIVEL_MAX) return 0;
+  return Math.max(100, Math.round((90 * Math.pow(n, 1.1)) / 10) * 10);
+}
+
+// tabela: XP acumulado para CHEGAR a cada nível (1..50)
+const CHEGAR = [0, 0];
+for (let n = 1; n < NIVEL_MAX; n++) CHEGAR[n + 1] = CHEGAR[n] + xpDoNivel(n);
+
+/** XP acumulado (desde o último prestígio) necessário para CHEGAR ao nível n. */
 export function xpParaChegar(n) {
-  // 100 × (1 + 2 + ... + (n-1)) = 50 × n × (n-1)
-  return 50 * n * (n - 1);
+  return CHEGAR[Math.max(1, Math.min(NIVEL_MAX, n))];
+}
+
+/** Nível pela curva, para um XP contado desde o último prestígio. */
+export function nivelDoXP(xp) {
+  let n = 1;
+  while (n < NIVEL_MAX && CHEGAR[n + 1] <= xp) n++;
+  return n;
+}
+
+/** XP que conta para os níveis (o total menos o que ficou antes do prestígio). */
+function xpDosNiveis(total) {
+  return Math.max(0, total - (dados().xp.basePrestigio || 0));
 }
 
 /** Informações do nível para um total de XP. */
 export function nivelInfo(total = dados().xp.total) {
   total = Math.max(0, total);
-  let n = 1;
-  while (xpParaChegar(n + 1) <= total) n++;
+  const x = xpDosNiveis(total);
+  const n = nivelDoXP(x);
   const base = xpParaChegar(n);
-  const necessario = 100 * n;
+  const maximo = n >= NIVEL_MAX;
+  const necessario = xpDoNivel(n);
   return {
     nivel: n,
     titulo: tituloDoNivel(n),
     total,
-    xpNoNivel: total - base,
+    maximo,
+    prestigio: dados().xp.prestigio || 0,
+    xpNoNivel: x - base,
     xpParaProximo: necessario,
-    falta: necessario - (total - base),
-    progresso: (total - base) / necessario,
+    falta: maximo ? 0 : necessario - (x - base),
+    progresso: maximo ? 1 : (x - base) / necessario,
   };
+}
+
+/** Quanto XP falta para chegar ao nível n (0 se já chegou). */
+export function faltaParaNivel(n) {
+  return Math.max(0, xpParaChegar(n) - xpDosNiveis(dados().xp.total));
+}
+
+/**
+ * Nível usado para DESBLOQUEIOS (visuais, temas, pets, medalhas).
+ * Depois de um prestígio tudo o que já foi liberado continua liberado.
+ */
+export function nivelDesbloqueio(d = dados()) {
+  return (d.xp.prestigio || 0) > 0 ? NIVEL_MAX : nivelInfo(d.xp.total).nivel;
+}
+
+/** Pode fazer o prestígio agora? */
+export function podePrestigio() {
+  const d = dados();
+  return nivelInfo(d.xp.total).maximo && (d.xp.prestigio || 0) < PRESTIGIO_MAX;
+}
+
+/** Faz o prestígio: +1 estrela e a contagem de níveis recomeça do 1. */
+export function fazerPrestigio() {
+  if (!podePrestigio()) return false;
+  const d = dados();
+  d.xp.prestigio = (d.xp.prestigio || 0) + 1;
+  d.xp.basePrestigio = d.xp.total;
+  d.xp.fisicoPiso = 1;
+  emitir('prestigio', d.xp.prestigio);
+  return true;
+}
+
+/** Bônus de XP das estrelas de prestígio (%). */
+export function bonusPrestigio() {
+  return Math.min(PRESTIGIO_MAX, dados().xp.prestigio || 0) * 5;
 }
 
 /**
@@ -131,7 +201,8 @@ export function recalcularXP() {
   const porDia = {};
   for (const l of d.xp.lancamentos) {
     total += l.xp;
-    porDia[l.dia] = (porDia[l.dia] || 0) + l.xp;
+    // o ajuste da conversão de níveis (v5) não conta como XP de um dia
+    if (l.fonte !== 'ajuste') porDia[l.dia] = (porDia[l.dia] || 0) + l.xp;
   }
   d.xp.total = total;
   d.xp.porDia = porDia;
@@ -153,7 +224,7 @@ export function bonusPocao() {
 
 /** Soma de todos os bônus de XP agora (em %). */
 export function multiplicadorTotal() {
-  return multiplicador() + bonusPocao() + bonusPet();
+  return multiplicador() + bonusPocao() + bonusPet() + bonusPrestigio();
 }
 
 /** Ganha moedas (baú, missões, medalhas). */

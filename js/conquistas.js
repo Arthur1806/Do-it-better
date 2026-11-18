@@ -11,7 +11,7 @@
 import { dados } from './store.js';
 import { emitir, hojeKey, somarDias, diaSemana, diasDaSemana, inicioSemana } from './utils.js';
 import { resumoRotina, sequenciaRotina, sequenciaCheck } from './historico.js';
-import { nivelInfo, ganharMoedas } from './xp.js';
+import { nivelInfo, ganharMoedas, nivelDesbloqueio } from './xp.js';
 import { contarHabitos, diasComAgua, recordesPessoais, PERSONAGENS } from './personagens.js';
 
 export const TIERS = [
@@ -42,7 +42,7 @@ export const SERIES = [
   { id: 'quarto', emoji: '🛏️', nome: 'Quarto em ordem', unidade: 'dias seguidos de quarto arrumado', niveis: [7, 30, 100, 365], valor: melhorQuarto },
   { id: 'missoes', emoji: '🎯', nome: 'Caçador de missões', unidade: 'missões resgatadas', niveis: [5, 30, 100, 300], valor: (d) => d.stats.missoesResgatadas || 0 },
   { id: 'presenca', emoji: '📅', nome: 'Presença', unidade: 'dias seguidos abrindo o baú', niveis: [3, 7, 30, 100], valor: (d) => d.stats.melhorCheckin || 0 },
-  { id: 'nivel', emoji: '⭐', nome: 'Evolução', unidade: 'de nível', niveis: [5, 10, 20, 30], valor: (d) => nivelInfo(d.xp.total).nivel },
+  { id: 'nivel', emoji: '⭐', nome: 'Evolução', unidade: 'de nível', niveis: [5, 15, 30, 50], valor: (d) => nivelDesbloqueio(d) },
   { id: 'xp', emoji: '💠', nome: 'Colecionador de XP', unidade: 'XP no total', niveis: [1000, 5000, 20000, 50000], valor: (d) => d.xp.total },
   { id: 'colecao', emoji: '🐾', nome: 'Domador', unidade: 'pets na coleção', niveis: [2, 5, 10, PERSONAGENS.length], valor: (d) => Object.keys(d.colecao).length },
 ];

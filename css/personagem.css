@@ -1276,3 +1276,153 @@ svg.pixel {
 .placar-heroi .placar-linha {
   margin-top: 14px;
 }
+
+/* =============================================================
+   v5 — Fogo em pixel art (pet mutante e forma final do personagem)
+   ============================================================= */
+.fogo {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  overflow: visible;
+  filter: drop-shadow(0 0 3px rgba(251, 146, 60, 0.55));
+}
+.fogo .fq {
+  opacity: 0;
+  animation: fogo-quadro var(--dur, 0.9s) steps(1, end) infinite;
+}
+@keyframes fogo-quadro {
+  0% { opacity: 1; }
+  16.67% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fogo .fq { animation: none; }
+  .fogo .fq:first-child { opacity: 1; }
+}
+.avatar.pet .avatar-emoji {
+  width: calc(var(--tam) * 0.8 * var(--escala, 1));
+  flex-shrink: 0;
+}
+.avatar-emoji > svg.pixel:not(.fogo) {
+  position: relative;
+  z-index: 1;
+}
+/* pet mutante: a aura vira brasa e ele fica com cara de fera */
+.avatar.mutante .avatar-aura {
+  background: radial-gradient(circle at 50% 55%, rgba(239, 68, 68, 0.35), transparent 70%);
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 calc(var(--tam) * 0.2) rgba(239, 68, 68, 0.35);
+}
+.avatar.mut-3 .avatar-aura {
+  border-color: rgba(253, 224, 71, 0.6);
+  box-shadow: 0 0 calc(var(--tam) * 0.35) rgba(249, 115, 22, 0.55);
+  animation: aura-pulso-brasa 1.2s ease-in-out infinite;
+}
+@keyframes aura-pulso-brasa {
+  50% { box-shadow: 0 0 calc(var(--tam) * 0.5) rgba(249, 115, 22, 0.75); }
+}
+.avatar.mutante .avatar-emoji {
+  animation: respirar-fera 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+@keyframes respirar-fera {
+  50% { transform: translateY(-2%) scale(1.03); }
+}
+
+/* ---------- v5: cartão de mutação (aba Pet → Cuidar) ---------- */
+.mutacao-card {
+  margin: 14px 0 4px;
+  padding: 14px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(239, 68, 68, 0.12), transparent 60%), var(--card);
+}
+.mutacao-card.pronta {
+  border-color: rgba(250, 204, 21, 0.7);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.25);
+}
+.mutacao-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.mutacao-cab h4 {
+  font-size: 17px;
+}
+.mutacao-trilha {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.mutacao-trilha > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 18px 2px 6px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--card-forte);
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  text-align: center;
+}
+.mutacao-trilha > div.on {
+  opacity: 1;
+  filter: none;
+}
+.mutacao-trilha > div.atual {
+  outline: 2px solid rgba(239, 68, 68, 0.7);
+}
+.mutacao-trilha .avatar {
+  --tam: 44px;
+}
+.mutacao-trilha small {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.mutacao-trilha i {
+  font-style: normal;
+  font-size: 10px;
+  color: var(--texto-2);
+}
+.mutacao-falta {
+  font-size: 13px;
+  color: #fca5a5;
+  margin: 4px 0 8px;
+}
+[data-theme='claro'] .mutacao-falta {
+  color: #b91c1c;
+}
+.mutacao-alerta {
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: rgba(239, 68, 68, 0.15);
+  margin-bottom: 8px;
+}
+.mutacao-card .btn {
+  margin-top: 6px;
+}
+.mutacao-card .btn[aria-disabled='true'] {
+  opacity: 0.6;
+}
+.dica.pequena {
+  font-size: 12px;
+  margin-top: 8px;
+}
+.celebra-pet .avatar {
+  --tam: 140px;
+}
+/* o pet mutante ocupa o espaço do tamanho novo (não invade o personagem) */
+.avatar.pet.mutante {
+  width: calc(var(--tam) * max(1, 0.8 * var(--escala, 1)));
+  height: calc(var(--tam) * max(1, 0.8 * var(--escala, 1)));
+}
+.cena .cena-pet .avatar.mutante {
+  margin-left: calc(var(--tam) * 0.12 * var(--escala, 1));
+}

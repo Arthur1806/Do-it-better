@@ -16,7 +16,7 @@ import { hojeKey } from './utils.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
 
 /** Versão atual do formato dos dados. Aumente ao criar uma migração. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 /** Chave usada no localStorage. */
 const CHAVE = 'doitbetter:dados';
@@ -55,6 +55,11 @@ export function estadoPadrao() {
       agua: 85,
       atualizadoEm: null, // para calcular fome e sede pelo tempo
       diasSemCuidado: 0,
+      diasBemCuidado: 0, // dias seguidos terminando bem cuidado (a cada 3: +1 DNA)
+      mutacao: 0, // 0 Filhote · 1 Mutante · 2 Fera · 3 Fera Suprema (v5)
+      mutacaoMax: 0, // maior estágio que já teve (voltar a ele custa metade)
+      travaPerda: false,
+      perdeuMutacaoEm: null,
     },
     // Perfil do jogador (preenchido no questionário de primeira entrada)
     perfil: {
@@ -67,6 +72,7 @@ export function estadoPadrao() {
     carteira: {
       moedas: 0,
       escudos: 0, // protegem a sequência em um dia falhado
+      dna: 0, // DNA mutante 🧬 (v5): paga as mutações do pet
       boostAte: 0, // poção de XP ativa até este timestamp
       boostPct: 50, // força da poção ativa (%)
       ampulhetaDia: null, // dia em que a ampulheta (+1h nos horários) está ativa
@@ -102,8 +108,12 @@ export function estadoPadrao() {
       total: 0,
       lancamentos: [], // { id, dia, ts, base, mult, xp, fonte, ref, rotulo }
       porDia: {}, // { 'AAAA-MM-DD': xp } — cache para gráficos
+      prestigio: 0, // estrelas de prestígio (v5)
+      basePrestigio: 0, // XP total no momento do último prestígio
+      fisicoPiso: 1, // físico mínimo (quem migrou da v4 não perde o físico que tinha)
     },
     conquistas: {}, // { idConquista: timestampDoDesbloqueio }
+    desafios: null, // desafios semanais sorteados { semana, lista, resgatados, bonus }
     stats: {
       melhorSequencia: 0, // maior sequência de rotina 100%
       checkinSeq: 0, // dias seguidos abrindo o baú diário
@@ -113,6 +123,8 @@ export function estadoPadrao() {
       missoesResgatadas: 0,
       melhorLiga: 0, // índice da melhor liga semanal
       comboMax: 0,
+      desafiosSemanais: 0, // desafios semanais resgatados
+      semanasCompletas: 0, // semanas com todos os desafios resgatados
     },
     // Painel (tela Hoje): ordem, visibilidade e tamanho dos blocos
     painel: [], // { id, tipo, ref?, ativo, tamanho: 'p' | 'g' }
@@ -212,6 +224,46 @@ const MIGRACOES = {
     for (const b of d.painel || []) if (['rotina', 'check', 'pendencias', 'treino'].includes(b.tipo)) b.ativo = false;
     d.meta = d.meta || {};
     d.meta.novidadeV4 = true;
+    return d;
+  },
+
+  // 5: curva de níveis mais longa (nível máximo 50) e prestígio.
+  // Ninguém cai de nível: se a curva nova deixaria a pessoa num nível menor,
+  // entra um lançamento de "ajuste" que mantém o nível e o progresso atuais.
+  5: (d) => {
+    const xp = d.xp || (d.xp = { total: 0, lancamentos: [], porDia: {} });
+    const total = (xp.lancamentos || []).reduce((s, l) => s + (l.xp || 0), 0);
+    // curva antiga: chegar ao nível n = 50 × n × (n − 1)
+    let velho = 1;
+    while (50 * (velho + 1) * velho <= total) velho++;
+    const fracao = (total - 50 * velho * (velho - 1)) / (100 * velho);
+    // curva nova (igual à de xp.js)
+    const passo = (n) => Math.max(100, Math.round((90 * Math.pow(n, 1.1)) / 10) * 10);
+    const chegar = (n) => {
+      let t = 0;
+      for (let i = 1; i < Math.min(n, 50); i++) t += passo(i);
+      return t;
+    };
+    let novo = 1;
+    while (novo < 50 && chegar(novo + 1) <= total) novo++;
+    const alvoNivel = Math.min(50, velho);
+    if (novo < alvoNivel) {
+      const alvo = Math.round(chegar(alvoNivel) + (alvoNivel < 50 ? fracao * passo(alvoNivel) : 0));
+      const bonus = alvo - total;
+      if (bonus > 0) {
+        xp.lancamentos.push({
+          id: 'ajuste-v5', dia: d.criadoEm || '2000-01-01', ts: Date.now(), base: bonus, mult: 0, xp: bonus, moedas: 0,
+          fonte: 'ajuste', ref: null, rotulo: 'Conversão de níveis (v5)',
+        });
+      }
+    }
+    xp.total = xp.lancamentos.reduce((s, l) => s + (l.xp || 0), 0);
+    xp.prestigio = 0;
+    xp.basePrestigio = 0;
+    // o físico que a pessoa já tinha também não regride (níveis antigos 1/3/6/10/20)
+    xp.fisicoPiso = [20, 10, 6, 3, 1].findIndex((n) => velho >= n) >= 0 ? 5 - [20, 10, 6, 3, 1].findIndex((n) => velho >= n) : 1;
+    d.meta = d.meta || {};
+    d.meta.novidadeV5 = true;
     return d;
   },
 };

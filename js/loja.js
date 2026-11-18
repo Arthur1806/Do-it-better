@@ -9,7 +9,7 @@
 
 import { dados } from './store.js';
 import { hojeKey } from './utils.js';
-import { gastarMoedas, nivelInfo } from './xp.js';
+import { gastarMoedas, nivelInfo, nivelDesbloqueio } from './xp.js';
 import { ITENS_PET } from './pet.js';
 import { CATEGORIAS, opcoes, idItem, liberado } from './visual.js';
 import { SKINS_PET } from './personagens.js';
@@ -21,7 +21,7 @@ export const TEMAS = [
   { id: 'oceano', nome: 'Oceano', preco: 250, c1: '#2563EB', c2: '#22D3EE', c1claro: '#93C5FD', c2claro: '#67E8F9' },
   { id: 'sakura', nome: 'Sakura', preco: 300, c1: '#EC4899', c2: '#A78BFA', c1claro: '#F9A8D4', c2claro: '#C4B5FD' },
   { id: 'matrix', nome: 'Matrix', preco: 400, c1: '#16A34A', c2: '#A3E635', c1claro: '#86EFAC', c2claro: '#D9F99D' },
-  { id: 'ouro', nome: 'Ouro', preco: 500, nivel: 10, c1: '#D97706', c2: '#FACC15', c1claro: '#FCD34D', c2claro: '#FEF08A' },
+  { id: 'ouro', nome: 'Ouro', preco: 500, nivel: 15, c1: '#D97706', c2: '#FACC15', c1claro: '#FCD34D', c2claro: '#FEF08A' },
 ];
 
 export const ITENS = [
@@ -88,7 +88,7 @@ export function comprar(id) {
       aplicarTemaCor(a);
       return { ok: true, msg: `Tema ${tema.nome} aplicado 🎨` };
     }
-    if (tema.nivel && nivelInfo(d.xp.total).nivel < tema.nivel) return { ok: false, msg: `Disponível a partir do nível ${tema.nivel}.` };
+    if (tema.nivel && nivelDesbloqueio(d) < tema.nivel) return { ok: false, msg: `Disponível a partir do nível ${tema.nivel}.` };
     if (!gastarMoedas(tema.preco)) return falta(tema.preco);
     d.loja.temas.push(a);
     d.loja.temaAtivo = a;

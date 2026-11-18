@@ -345,8 +345,8 @@ const TELAS = {
         <div class="onb-pers cinco">${PERSONAGENS.filter((x) => x.inicial).map((x) => opcao(r.pet === x.id, `data-pet="${x.id}"`, `${avatarHTML(x, { tam: 'g', nivel: 1, estado: false })}<b>${x.especie}</b><small>${x.jeito}</small>`, 'pers')).join('')}</div>
         <label class="campo"><span>Nome do pet</span><input class="entrada grande" data-campo="nomePet" maxlength="16" placeholder="${esc(p.nome)}" value="${esc(r.nomePet)}"></label>
         <div class="onb-evolucao card">
-          <small>Evolução do seu pet (conforme seu nível)</small>
-          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', nivel: e.nivel, estado: false })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
+          <small>Mutações do seu pet (com nível e DNA 🧬)</small>
+          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', mutacao: e.n, estado: false })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
         </div>
         <p class="dica centro">E mais ${PERSONAGENS.filter((x) => !x.inicial).length} pets para desbloquear com o seu progresso 🔒</p>`,
     };
