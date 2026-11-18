@@ -88,7 +88,7 @@ on('nivel', (info) => {
   // o seu personagem também fica mais forte
   const f = fisicoAtual();
   if (f.n > fisicoVisto) {
-    celebrar({ emoji: `<span class="celebra-personagem">${personagemHTML(d.avatar, { fisico: f.n })}</span>`, titulo: `Você ficou ${f.nome}!`, subtitulo: `${f.desc} Veja na aba Pet → Personagem.` });
+    celebrar({ emoji: `<span class="celebra-personagem">${personagemHTML(d.avatar, { fisico: f.n })}</span>`, titulo: `Nova forma: ${f.nome}!`, subtitulo: `${f.desc} Veja na aba Pet → Personagem.` });
   }
   fisicoVisto = f.n;
 });

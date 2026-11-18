@@ -189,6 +189,27 @@ export const CHAPEUS = {
   aureola: { fixo: true, linhas: ['....YYYYYYYY....'] },
 };
 
+/**
+ * CABELO DE PODER (formas transformadas). A grade do personagem ganha
+ * "extra" linhas em cima, então y = 0 aqui fica 3 linhas acima da cabeça.
+ * I = reflexo de luz no cabelo.
+ */
+export const CABELO_PODER = {
+  extra: 3,
+  linhas: [
+    '.....H....H.....',
+    '.H...HH..HH...H.',
+    '.HH.HHHHHHHH.HH.',
+    '..HHHHIHHIHHHH..',
+    '.HHHHHHHHHHHHHH.',
+    '..HHHHHHHHHHHH..',
+    '..HHhH.HH.HhHH..',
+    '..HH........HH..',
+    '..H..........H..',
+    '..h..........h..',
+  ],
+};
+
 /** Acessórios do rosto. */
 export const ACESSORIOS = {
   nenhum: { linhas: [] },

@@ -11,7 +11,7 @@ import { hojeKey, esc, formatarDataHora, formatarHora } from './utils.js';
 import { nivelInfo, pocaoAtiva, xpParaChegar } from './xp.js';
 import { PERSONAGENS, ESTAGIOS, avatarHTML, companheiro, estagioDoNivel, novosNaColecao, personagem, SKINS_PET } from './personagens.js';
 import { TEMAS, ITENS, ITENS_DO_PET, comprar, visuaisDaLoja, skinLiberada, usarAmpulheta, abrirBauMisterioso } from './loja.js';
-import { CATEGORIAS, opcoes, liberado, comoLiberar, etiquetaRaridade, avatarSVG, personagemHTML, RARIDADES, previaItem, FISICOS, fisicoAtual } from './visual.js';
+import { CATEGORIAS, opcoes, liberado, comoLiberar, etiquetaRaridade, avatarSVG, personagemHTML, RARIDADES, previaItem, FISICOS, FISICO_MAX, fisicoAtual } from './visual.js';
 import { cuidarHTML, ligarCuidar, abrirEditorPersonagem } from './telas-personagem.js';
 import { precisaDeAtencao } from './pet.js';
 import { abrirSheet, toast, vibrar, confete } from './ui.js';
@@ -125,7 +125,7 @@ const SECAO = {
       <div class="evolucao-fisica">${FISICOS.map((x) => `<div class="${info.nivel >= x.nivel ? 'on' : 'travado'} ${x.n === f.n ? 'atual' : ''}">
           <span class="mini-fisico">${personagemHTML(d.avatar, { classe: 'mini', fisico: x.n })}</span>
           <b>${x.nome}</b><small>nível ${x.nivel}</small></div>`).join('')}</div>
-      <p class="dica" style="padding:0 14px 14px">${prox ? `Próximo: <b>${prox.nome}</b> no nível ${prox.nivel} — faltam ${xpParaChegar(prox.nivel) - d.xp.total} XP. ${esc(prox.desc)}` : 'Você chegou ao físico máximo: Imparável! 🔥'}</p>
+      <p class="dica" style="padding:0 14px 14px">${prox ? `Próximo: <b>${prox.nome}</b> no nível ${prox.nivel} — faltam ${xpParaChegar(prox.nivel) - d.xp.total} XP. ${esc(prox.desc)}` : `Você chegou à forma máxima: ${FISICO_MAX.nome}! ⚡`}</p>
     </section>
 
     <div class="secao-cab"><h2 class="secao-titulo">Itens exclusivos</h2><small class="apagado">${liberados}/${exclusivos.length} liberados</small></div>

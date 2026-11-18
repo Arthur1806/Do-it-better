@@ -8,6 +8,36 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 4.1
+
+- **⚡ Formas de poder do personagem:** a evolução física agora tem **8 formas**, e quanto mais alto o nível, mais forte a aura em volta do boneco:
+  | Forma | Nível | Visual |
+  |---|---|---|
+  | Franzino | 1 | sem aura |
+  | Treinado | 3 | leve brilho |
+  | Forte | 6 | aura roxa pulsando |
+  | Guerreiro | 10 | faixa, pintura de batalha e **aura de fogo** |
+  | Despertar Dourado | 15 | **cabelo dourado espetado**, olhos verdes e **aura dourada em chamas** com raios de luz subindo |
+  | Fúria Elétrica | 20 | aura dourada mais intensa com **raios elétricos** e **pedras flutuando** |
+  | Aura Celeste | 30 | **cabelo e aura azuis**, com estrelas brilhando à volta |
+  | Forma Suprema | 40 | forma máxima: aura azul gigante, raios, pedras e estrelas |
+  - Nas formas transformadas (15+), o cabelo de poder substitui o cabelo e o chapéu escolhidos (eles voltam a aparecer se o nível cair).
+  - As animações respeitam o "Reduzir movimento" do iPhone.
+- **Exclusivos ficam para sempre:** um item exclusivo de progresso, depois de liberado, continua liberado (como as medalhas).
+- **Save completo:** `saves/do-it-better-save-maximo.json` (veja abaixo).
+
+## Save completo (nível máximo e tudo desbloqueado)
+
+O arquivo [`saves/do-it-better-save-maximo.json`](saves/do-it-better-save-maximo.json) é um backup com:
+
+- **nível 50** (forma máxima Forma Suprema liberada) e 🪙 99.999 moedas, 2 escudos e a mochila cheia;
+- **todas as 63 medalhas**, todos os **18 pets** da coleção, todas as **skins de pet** e todos os **temas**;
+- **todos os itens de visual** (loja e exclusivos) liberados.
+
+Como usar no iPhone: baixe o arquivo (no Safari, abra o link, toque em Compartilhar → **Salvar em Arquivos**), depois, no app, vá em **Perfil → Ajustes → 📥 Importar backup** e escolha o arquivo.
+
+⚠️ Importar **substitui** os dados atuais do aparelho (o app guarda uma cópia automática do que havia antes). Faça um **Exportar backup** antes, se quiser guardar os seus. Ao abrir, o app mostra o questionário para você montar a rotina, escolher o pet e criar o personagem, já com todo o progresso no máximo.
+
 ## Novidades da versão 4.0
 
 - **📋 Plano de hoje:** a tela Hoje agora mostra numa lista só, em ordem de horário, tudo o que é para fazer no dia — itens da rotina, desafios (checks), pendências com prazo hoje ou atrasadas e o treino. Cada linha tem uma **caixinha grande com ✓** para marcar (as atrasadas ficam em laranja). O que já foi feito desce para "Feitos hoje".
@@ -130,7 +160,7 @@ do-it-better/
 - **Escudo de sequência:** se você falhar a rotina num dia e tiver escudo, ele é usado sozinho na virada do dia e a sequência continua (o dia aparece com 🛡️ no calendário).
 - **Moedas:** 1 a cada 10 XP; missões 10–20; baú diário 10–70 (cresce com a presença); medalhas 🥉10 · 🥈25 · 🥇60 · 💎150; carinho no companheiro 5 por dia.
 - **Pet:** comida e água caem com o tempo (a comida dura ~3 dias, a água ~2). Compre na aba **Pet → Cuidar** com moedas (ou use o que tem na mochila).
-- **Físico do personagem:** muda nos níveis 3, 6, 10 e 20.
+- **Físico do personagem:** muda nos níveis 3, 6, 10, 15, 20, 30 e 40 (formas de poder com aura).
 - Todos os valores podem ser mudados em **Perfil → Ajustes → Valores de XP**.
 
 ---

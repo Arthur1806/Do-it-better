@@ -7,7 +7,7 @@
 // Se criar um arquivo novo, adicione-o também na lista ARQUIVOS.
 // =============================================================
 
-const VERSAO = '4.0.0';
+const VERSAO = '4.1.0';
 const CACHE = `do-it-better-v${VERSAO}`;
 
 // Todos os caminhos são relativos (o site roda em /do-it-better/)

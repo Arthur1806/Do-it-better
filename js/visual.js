@@ -13,7 +13,7 @@ import { emitir, esc } from './utils.js';
 import { nivelInfo } from './xp.js';
 import { sequenciaRotina } from './historico.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
-import { CORPO, ROUPAS, CALCAS, CABELOS, CHAPEUS, ACESSORIOS, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
+import { CORPO, ROUPAS, CALCAS, CABELOS, CHAPEUS, ACESSORIOS, CABELO_PODER, compor, svgDaGrade, sombrear, misturar } from './pixel.js';
 
 export const RARIDADES = {
   comum: { nome: 'Comum', cor: '#94a3b8' },
@@ -170,6 +170,8 @@ export function buscarItem(cat, valor) {
 /** O item está liberado para usar? */
 export function liberado(cat, item, d = dados()) {
   const dd = item.d;
+  // exclusivo de progresso já liberado uma vez fica para sempre (como as medalhas)
+  if (!['gratis', 'loja'].includes(dd.tipo) && item.id && (d.visualVisto || []).includes(idItem(cat, item.id))) return true;
   switch (dd.tipo) {
     case 'gratis':
       return true;
@@ -286,11 +288,17 @@ function paletaDe(cfg) {
 
 export const FISICOS = [
   { n: 1, nivel: 1, nome: 'Franzino', desc: 'Começando a jornada. Cada dia cumprido deixa você mais forte.' },
-  { n: 2, nivel: 3, nome: 'Treinado', desc: 'Braços mais fortes e olhar focado.' },
-  { n: 3, nivel: 6, nome: 'Forte', desc: 'Ombros largos, braços musculosos e olhar de quem não desiste.' },
-  { n: 4, nivel: 10, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha, aura de fogo.' },
-  { n: 5, nivel: 20, nome: 'Imparável', desc: 'Olhos brilhando e aura de energia de um guerreiro imparável.' },
+  { n: 2, nivel: 3, nome: 'Treinado', desc: 'Braços mais fortes, olhar focado e um leve brilho de energia.' },
+  { n: 3, nivel: 6, nome: 'Forte', desc: 'Ombros largos, braços musculosos e uma aura de energia pulsando.' },
+  { n: 4, nivel: 10, nome: 'Guerreiro', desc: 'Corpo de guerreiro, faixa e pintura de batalha e uma aura de FOGO em volta.' },
+  { n: 5, nivel: 15, nome: 'Despertar Dourado', desc: 'O poder desperta: cabelo dourado espetado, olhos verdes e aura dourada em chamas.' },
+  { n: 6, nivel: 20, nome: 'Fúria Elétrica', desc: 'A aura dourada explode: raios elétricos e pedras flutuando à sua volta.' },
+  { n: 7, nivel: 30, nome: 'Aura Celeste', desc: 'Energia divina: cabelo e aura azuis, com brilhos de estrelas à volta.' },
+  { n: 8, nivel: 40, nome: 'Forma Suprema', desc: 'Forma máxima: aura azul gigante, raios, pedras flutuando e estrelas. Ninguém te para.' },
 ];
+
+/** Último físico (forma máxima). */
+export const FISICO_MAX = FISICOS[FISICOS.length - 1];
 
 export function fisicoDoNivel(nivel) {
   let f = FISICOS[0];
@@ -300,6 +308,17 @@ export function fisicoDoNivel(nivel) {
 export function fisicoAtual() {
   return fisicoDoNivel(nivelInfo(dados().xp.total).nivel);
 }
+
+/** Formas "transformadas" (cabelo de poder): a partir do Despertar Dourado. */
+export const FORMA_TRANSFORMADA = 5;
+
+/** Cores do cabelo e dos olhos nas formas transformadas. */
+const CORES_FORMA = {
+  5: { H: '#facc15', h: '#ca8a04', I: '#fef9c3', X: '#2dd4bf' },
+  6: { H: '#fde047', h: '#d97706', I: '#ffffff', X: '#5eead4' },
+  7: { H: '#38bdf8', h: '#0369a1', I: '#e0f2fe', X: '#22d3ee' },
+  8: { H: '#60a5fa', h: '#1d4ed8', I: '#ffffff', X: '#a5f3fc' },
+};
 
 /** Aplica músculos, expressão e brilho do físico na grade. */
 function aplicarFisico(g, n) {
@@ -342,7 +361,7 @@ function aplicarFisico(g, n) {
     }
   }
   if (n >= 4) {
-    // corpo de guerreiro e pintura de batalha
+    // corpo de guerreiro
     set(1, 11, get(2, 11));
     set(14, 11, get(13, 11));
     for (const y of [15, 16, 17]) {
@@ -351,10 +370,13 @@ function aplicarFisico(g, n) {
     }
     set(2, 18, 'F');
     set(13, 18, 'F');
-    // pintura de guerra (2 riscos em cada bochecha) e boca cerrada
-    for (const [x, y] of [[4, 7], [5, 7], [10, 7], [11, 7]]) if (['S', 'B'].includes(get(x, y))) set(x, y, 'R');
+    // boca cerrada
     if (get(6, 8) === 'S' && get(7, 8) === 'k') set(6, 8, 'k');
     if (get(9, 8) === 'S' && get(8, 8) === 'k') set(9, 8, 'k');
+  }
+  if (n === 4) {
+    // pintura de guerra (2 riscos em cada bochecha) e boca cerrada
+    for (const [x, y] of [[4, 7], [5, 7], [10, 7], [11, 7]]) if (['S', 'B'].includes(get(x, y))) set(x, y, 'R');
     // faixa de guerreiro na testa (só se a testa estiver à mostra)
     let testa = 0;
     for (let x = 4; x <= 11; x++) if (['S', 'h'].includes(get(x, 3))) testa++;
@@ -372,32 +394,82 @@ function aplicarFisico(g, n) {
   return g;
 }
 
-/** Grade (16x20) do personagem. */
+/**
+ * Grade do personagem: 16x20, ou 16x23 nas formas transformadas
+ * (3 linhas a mais em cima para o cabelo de poder espetado).
+ */
 export function gradeAvatar(cfg = dados().avatar, fisico = fisicoAtual().n) {
   const c = { ...AVATAR_PADRAO, ...cfg };
+  const transformado = fisico >= FORMA_TRANSFORMADA;
   const roupa = ROUPAS[c.roupa] || ROUPAS.camiseta;
   const camadas = [];
   if (roupa.atras) camadas.push(roupa.atras);
   camadas.push({ linhas: CORPO });
   camadas.push(CALCAS[c.calca] || CALCAS.calca);
   camadas.push(roupa);
-  camadas.push(CABELOS[c.cabelo] || CABELOS.curto);
+  // transformado: o cabelo de poder substitui o cabelo e o chapéu
+  if (!transformado) camadas.push(CABELOS[c.cabelo] || CABELOS.curto);
   camadas.push(ACESSORIOS[c.acessorio] || ACESSORIOS.nenhum);
-  camadas.push(CHAPEUS[c.chapeu] || CHAPEUS.nenhum);
-  return aplicarFisico(compor(camadas, 16, 20), fisico);
+  if (!transformado) camadas.push(CHAPEUS[c.chapeu] || CHAPEUS.nenhum);
+  const g = aplicarFisico(compor(camadas, 16, 20), fisico);
+  if (!transformado) return g;
+  const extra = CABELO_PODER.extra;
+  const alta = [...Array.from({ length: extra }, () => Array(16).fill('.')), ...g];
+  CABELO_PODER.linhas.forEach((linha, y) => {
+    for (let x = 0; x < 16; x++) if (linha[x] !== '.') alta[y][x] = linha[x];
+  });
+  return alta;
+}
+
+/** Paleta com as cores da forma (cabelo dourado/azul, olhos brilhando). */
+function paletaComForma(cfg, fisico) {
+  const pal = paletaDe(cfg);
+  const forma = CORES_FORMA[fisico];
+  if (forma) Object.assign(pal, forma);
+  return pal;
 }
 
 /** SVG do personagem (só o desenho). */
 export function avatarSVG(cfg = dados().avatar, classe = '', { fisico } = {}) {
   const c = { ...AVATAR_PADRAO, ...cfg };
-  return svgDaGrade(gradeAvatar(c, fisico || fisicoAtual().n), paletaDe(c), { classe: `avatar-pixel ${classe}`, rotulo: 'Seu personagem' });
+  const f = fisico || fisicoAtual().n;
+  return svgDaGrade(gradeAvatar(c, f), paletaComForma(c, f), { classe: `avatar-pixel ${f >= FORMA_TRANSFORMADA ? 'transformado' : ''} ${classe}`, rotulo: 'Seu personagem' });
 }
 
-/** Personagem com a aura do físico (fogo no Guerreiro, energia no Imparável). */
+// Chamas da aura (viewBox 0 0 100 150, os pés ficam em y = 150).
+const CHAMA_EXTERNA = 'M50 150C22 150 6 134 8 108C9 92 2 80 6 62L14 74C13 56 16 42 24 26L28 46C31 32 37 18 44 4L47 26L50 0L53 26L56 4C63 18 69 32 72 46L76 26C84 42 87 56 86 74L94 62C98 80 91 92 92 108C94 134 78 150 50 150Z';
+const CHAMA_MEIO = 'M50 150C28 150 16 136 18 114C19 98 14 86 18 72L24 82C24 66 28 54 34 42L37 58C40 46 45 34 50 20C55 34 60 46 63 58L66 42C72 54 76 66 76 82L82 72C86 86 81 98 82 114C84 136 72 150 50 150Z';
+const CHAMA_NUCLEO = 'M50 150C34 150 27 138 29 122C30 108 34 96 40 82L44 94C46 80 48 70 50 58C52 70 54 80 56 94L60 82C66 96 70 108 71 122C73 138 66 150 50 150Z';
+const RAIOS = ['M20 18L30 40L22 44L34 70', 'M80 30L70 52L79 56L66 84', 'M14 70L26 88L18 92L28 112', 'M88 78L76 96L85 100L74 124'];
+
+/** Aura em volta do personagem: brilho (formas 2–3) ou chamas de energia (4+). */
+function auraHTML(f) {
+  if (f < 4) return '<span class="aura-guerreiro" aria-hidden="true"></span>';
+  const n = (k) => Array.from({ length: k }, () => '<i></i>').join('');
+  const raios = f === 6 || f === 8
+    ? `<svg class="aura-raios" viewBox="0 0 100 150" preserveAspectRatio="none" aria-hidden="true">${RAIOS.map((d) => `<path d="${d}"/>`).join('')}</svg>`
+    : '';
+  return `<span class="aura-guerreiro" aria-hidden="true"></span>
+    <span class="aura-chamas" aria-hidden="true">
+      <svg viewBox="0 0 100 150" preserveAspectRatio="none">
+        <path class="ch-ext" d="${CHAMA_EXTERNA}"/>
+        <path class="ch-ext ch-ext2" d="${CHAMA_EXTERNA}"/>
+        <path class="ch-meio" d="${CHAMA_MEIO}"/>
+        <path class="ch-nucleo" d="${CHAMA_NUCLEO}"/>
+      </svg>
+    </span>
+    <span class="aura-chao" aria-hidden="true"></span>
+    ${f >= 5 ? `<span class="aura-luz" aria-hidden="true">${n(6)}</span>` : ''}
+    ${raios}
+    ${f === 6 || f === 8 ? `<span class="aura-pedras" aria-hidden="true">${n(5)}</span>` : ''}
+    ${f >= 7 ? `<span class="aura-estrelas" aria-hidden="true">${n(8)}</span>` : ''}`;
+}
+
+/** Personagem com a aura do físico (fogo, dourada, elétrica, celeste...). */
 export function personagemHTML(cfg = dados().avatar, { classe = '', fisico } = {}) {
   const f = fisico || fisicoAtual().n;
   return `<span class="personagem fisico-${f}">
-    <span class="aura-guerreiro" aria-hidden="true"></span>
+    ${auraHTML(f)}
     ${avatarSVG(cfg, classe, { fisico: f })}
     ${f >= 4 ? '<span class="faiscas" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' : ''}
   </span>`;
