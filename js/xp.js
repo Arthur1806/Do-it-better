@@ -10,6 +10,7 @@
 import { dados } from './store.js';
 import { hojeKey, somarDias, uid, emitir } from './utils.js';
 import { multiplicador } from './historico.js';
+import { bonusPet, aoGanharXP, aoPerderXP } from './pet.js';
 
 /** Títulos por nível (a partir de qual nível vale cada título). */
 export const TITULOS = [
@@ -67,8 +68,8 @@ export function ganharXP({ base, fonte, ref = null, rotulo = '', multiplicar = t
   const d = dados();
   const dia = hojeKey();
   const nivelAntes = nivelInfo(d.xp.total).nivel;
-  // multiplicador de sequência + poção de XP (+50%) se estiver ativa
-  const mult = multiplicar ? multiplicador() + (pocaoAtiva() ? 50 : 0) : 0;
+  // multiplicador de sequência + poção de XP + pet bem cuidado (+5%)
+  const mult = multiplicar ? multiplicadorTotal() : 0;
   const xp = Math.round(base * (1 + mult / 100));
   // Cada 10 XP rende 1 moeda (mínimo 1). Desfazer devolve as moedas.
   const moedas = xp > 0 ? Math.max(1, Math.round(xp / 10)) : 0;
@@ -77,6 +78,7 @@ export function ganharXP({ base, fonte, ref = null, rotulo = '', multiplicar = t
   d.xp.total += xp;
   d.xp.porDia[dia] = (d.xp.porDia[dia] || 0) + xp;
   d.carteira.moedas += moedas;
+  aoGanharXP(lanc); // o pet fica mais forte com as suas atividades
   emitir('xp', lanc);
   const depois = nivelInfo(d.xp.total);
   if (depois.nivel > nivelAntes) emitir('nivel', depois);
@@ -92,6 +94,7 @@ export function removerXP(idLanc) {
   const [lanc] = d.xp.lancamentos.splice(i, 1);
   d.xp.total = Math.max(0, d.xp.total - lanc.xp);
   d.carteira.moedas = Math.max(0, d.carteira.moedas - (lanc.moedas || 0));
+  aoPerderXP(lanc);
   d.xp.porDia[lanc.dia] = (d.xp.porDia[lanc.dia] || 0) - lanc.xp;
   if (d.xp.porDia[lanc.dia] <= 0) delete d.xp.porDia[lanc.dia];
   emitir('xp-removido', lanc);
@@ -138,9 +141,19 @@ export function recalcularXP() {
 // Moedas e poção de XP
 // -------------------------------------------------------------
 
-/** A poção de XP (+50%) está ativa agora? */
+/** A poção de XP está ativa agora? */
 export function pocaoAtiva() {
   return (dados().carteira.boostAte || 0) > Date.now();
+}
+
+/** Bônus da poção ativa (em %). */
+export function bonusPocao() {
+  return pocaoAtiva() ? dados().carteira.boostPct || 50 : 0;
+}
+
+/** Soma de todos os bônus de XP agora (em %). */
+export function multiplicadorTotal() {
+  return multiplicador() + bonusPocao() + bonusPet();
 }
 
 /** Ganha moedas (baú, missões, medalhas). */

@@ -10,6 +10,7 @@ import { dados, alterar } from './store.js';
 import { hojeKey, esc, uid, somarMinutos, diasDaSemana, plural } from './utils.js';
 import { ganharXP } from './xp.js';
 import { PERSONAGENS, ESTAGIOS, avatarHTML, personagem } from './personagens.js';
+import { avatarSVG, montarEditor, AVATAR_PADRAO } from './visual.js';
 import { criarExemplos, limparExemplos } from './seed.js';
 import { vibrar, confete, ICONE_SETA_ESQ, ICONE_MAIS, ICONE_MENOS, ICONE_CHECK } from './ui.js';
 import { tocar } from './sons.js';
@@ -40,50 +41,51 @@ export const AREAS = [
 ];
 
 const SEG_SEX = [1, 2, 3, 4, 5];
-/** Hábitos sugeridos por área. pre = já vem marcado. */
+/** Hábitos sugeridos por área. pre = já vem marcado.
+ *  hora = horário limite fixo · min = minutos depois de acordar. */
 const HABITOS = {
   saude: [
-    { emoji: '💧', nome: 'Beber água ao acordar', pre: true },
-    { emoji: '🥗', nome: 'Comer uma fruta ou salada' },
-    { emoji: '💊', nome: 'Tomar vitaminas/remédios' },
-    { emoji: '🚶', nome: 'Caminhar 20 minutos' },
+    { emoji: '💧', nome: 'Beber água ao acordar', min: 30, pre: true },
+    { emoji: '🥗', nome: 'Comer uma fruta ou salada', hora: '16:00' },
+    { emoji: '💊', nome: 'Tomar vitaminas/remédios', min: 60 },
+    { emoji: '🚶', nome: 'Caminhar 20 minutos', hora: '19:00' },
   ],
   treino: [
-    { emoji: '🤸', nome: 'Alongar 10 minutos', pre: true },
-    { emoji: '🥩', nome: 'Bater a meta de proteína' },
+    { emoji: '🤸', nome: 'Alongar 10 minutos', min: 45, pre: true },
+    { emoji: '🥩', nome: 'Bater a meta de proteína', hora: '21:00' },
   ],
   estudos: [
-    { emoji: '📚', nome: 'Estudar 30 minutos', pre: true },
-    { emoji: '📖', nome: 'Ler 20 páginas' },
-    { emoji: '🗣️', nome: 'Praticar um idioma (15 min)' },
-    { emoji: '🧠', nome: 'Revisar as anotações do dia', dias: SEG_SEX },
+    { emoji: '📚', nome: 'Estudar 30 minutos', hora: '20:00', pre: true },
+    { emoji: '📖', nome: 'Ler 20 páginas', hora: '22:00' },
+    { emoji: '🗣️', nome: 'Praticar um idioma (15 min)', hora: '21:00' },
+    { emoji: '🧠', nome: 'Revisar as anotações do dia', hora: '21:30', dias: SEG_SEX },
   ],
   trabalho: [
-    { emoji: '🎯', nome: 'Definir as 3 prioridades do dia', dias: SEG_SEX, pre: true },
-    { emoji: '📵', nome: 'Bloco de foco sem celular', dias: SEG_SEX },
-    { emoji: '📨', nome: 'Zerar a caixa de entrada', dias: SEG_SEX },
-    { emoji: '📝', nome: 'Planejar o dia seguinte', dias: SEG_SEX },
+    { emoji: '🎯', nome: 'Definir as 3 prioridades do dia', min: 120, dias: SEG_SEX, pre: true },
+    { emoji: '📵', nome: 'Bloco de foco sem celular', hora: '12:00', dias: SEG_SEX },
+    { emoji: '📨', nome: 'Zerar a caixa de entrada', hora: '17:00', dias: SEG_SEX },
+    { emoji: '📝', nome: 'Planejar o dia seguinte', hora: '21:00', dias: SEG_SEX },
   ],
   casa: [
-    { emoji: '🍽️', nome: 'Lavar a louça', pre: true },
-    { emoji: '🧹', nome: 'Arrumar a casa por 10 minutos' },
-    { emoji: '🧺', nome: 'Cuidar da roupa', dias: [3, 6] },
-    { emoji: '🌱', nome: 'Regar as plantas', dias: [1, 4] },
+    { emoji: '🍽️', nome: 'Lavar a louça', hora: '21:00', pre: true },
+    { emoji: '🧹', nome: 'Arrumar a casa por 10 minutos', hora: '20:00' },
+    { emoji: '🧺', nome: 'Cuidar da roupa', hora: '19:00', dias: [3, 6] },
+    { emoji: '🌱', nome: 'Regar as plantas', hora: '10:00', dias: [1, 4] },
   ],
   financas: [
-    { emoji: '💰', nome: 'Anotar os gastos do dia', pre: true },
-    { emoji: '🚫', nome: 'Nenhuma compra por impulso' },
-    { emoji: '📊', nome: 'Conferir o saldo', dias: [1] },
+    { emoji: '💰', nome: 'Anotar os gastos do dia', hora: '22:00', pre: true },
+    { emoji: '🚫', nome: 'Nenhuma compra por impulso', hora: '23:00' },
+    { emoji: '📊', nome: 'Conferir o saldo', hora: '10:00', dias: [1] },
   ],
   mente: [
-    { emoji: '🧘', nome: 'Meditar 10 minutos', pre: true },
-    { emoji: '🙏', nome: 'Escrever 3 gratidões' },
-    { emoji: '📓', nome: 'Diário: como foi o dia' },
-    { emoji: '🌳', nome: 'Tempo ao ar livre' },
+    { emoji: '🧘', nome: 'Meditar 10 minutos', min: 60, pre: true },
+    { emoji: '🙏', nome: 'Escrever 3 gratidões', hora: '22:00' },
+    { emoji: '📓', nome: 'Diário: como foi o dia', hora: '22:30' },
+    { emoji: '🌳', nome: 'Tempo ao ar livre', hora: '18:00' },
   ],
   sono: [
-    { emoji: '📵', nome: 'Sem telas 30 min antes de dormir', pre: true },
-    { emoji: '🛌', nome: 'Deitar antes das 23h' },
+    { emoji: '📵', nome: 'Sem telas 30 min antes de dormir', hora: '22:30', pre: true },
+    { emoji: '🛌', nome: 'Deitar antes das 23h', hora: '23:00' },
   ],
 };
 
@@ -192,7 +194,9 @@ function respostasIniciais() {
   return {
     nome: d.ajustes.nome || '',
     objetivo: d.perfil.objetivo || '',
-    personagem: d.perfil.personagem || 'raposa',
+    pet: d.pet.especie || 'cachorro',
+    nomePet: d.pet.nome || '',
+    avatar: { ...AVATAR_PADRAO, ...d.avatar },
     focos: [...(d.perfil.focos || [])],
     acorda: d.perfil.acorda || '07:00',
     habitos: [], // [{emoji,nome,dias}]
@@ -208,17 +212,24 @@ function respostasIniciais() {
 }
 
 function passos() {
-  const l = ['boas-vindas', 'nome', 'companheiro', 'areas', 'acorda', 'rotina'];
+  const l = ['boas-vindas', 'nome', 'personagem', 'pet', 'areas', 'acorda', 'rotina'];
   if (r.focos.includes('treino')) l.push('treino');
   l.push('pendencias', 'metas', 'pronto');
   return l;
+}
+
+/** Horário limite sugerido de um hábito (fixo ou relativo à hora de acordar). */
+function horarioDe(h) {
+  if (h.hora) return h.hora;
+  if (h.min) return somarMinutos(r.acorda, h.min);
+  return null;
 }
 
 /** Pré-seleciona hábitos e desafios conforme as áreas (até o usuário mexer). */
 function preSelecionar() {
   if (!r.habitosTocados) {
     r.habitos = [];
-    for (const a of r.focos) for (const h of HABITOS[a] || []) if (h.pre) r.habitos.push({ emoji: h.emoji, nome: h.nome, dias: h.dias || null });
+    for (const a of r.focos) for (const h of HABITOS[a] || []) if (h.pre) r.habitos.push({ emoji: h.emoji, nome: h.nome, dias: h.dias || null, horario: horarioDe(h) });
   }
   if (!r.desafiosTocados) {
     r.desafios = DESAFIOS.filter((x) => r.focos.includes(x.area)).slice(0, 2).map((x) => x.id);
@@ -286,6 +297,7 @@ function desenhar(direcao = 1) {
       <button class="btn primario largo grande" data-onb="avancar" ${conteudo.bloqueado ? 'disabled' : ''}>${conteudo.botao || 'Continuar'}</button>
       ${conteudo.extra || ''}
     </div>`;
+  if (conteudo.montar) conteudo.montar(raiz.querySelector('.onb-corpo'));
   const foco = raiz.querySelector('[data-autofoco]');
   if (foco) setTimeout(() => foco.focus(), 350);
 }
@@ -301,8 +313,8 @@ const TELAS = {
         <div class="onb-beneficios">
           <div><span>🎯</span>Missões e baú todo dia</div>
           <div><span>🔥</span>Sequências que multiplicam seu XP</div>
-          <div><span>🐾</span>Um companheiro que evolui com você</div>
-          <div><span>🏅</span>Medalhas de bronze a diamante</div>
+          <div><span>🐾</span>Um pet que depende de você</div>
+          <div><span>🧑‍🎤</span>Personagem com skins exclusivas</div>
         </div>
         <p class="dica">Responda algumas perguntas rápidas e o app fica com a sua cara.</p>
       </div>`,
@@ -318,17 +330,25 @@ const TELAS = {
     bloqueado: !r.objetivo,
   }),
 
-  companheiro: () => {
-    const p = personagem(r.personagem);
+  personagem: () => ({
+    html: `<h2 class="onb-titulo">Crie seu personagem</h2>
+      <p class="onb-sub">Esse é você no jogo. Itens raros, épicos e lendários (🔒) liberam conforme você avança.</p>
+      <div class="onb-editor"></div>`,
+    montar: (el) => montarEditor(el.querySelector('.onb-editor'), r.avatar, { categorias: ['pele', 'cabelo', 'corCabelo', 'roupa', 'corRoupa', 'calca', 'corCalca', 'chapeu', 'corChapeu', 'acessorio'] }),
+  }),
+
+  pet: () => {
+    const p = personagem(r.pet);
     return {
-      html: `<h2 class="onb-titulo">Escolha seu companheiro</h2>
-        <p class="onb-sub">Ele te acompanha todos os dias, reage ao seu progresso e evolui quando você sobe de nível.</p>
-        <div class="onb-pers">${PERSONAGENS.filter((x) => x.inicial).map((x) => opcao(r.personagem === x.id, `data-pers="${x.id}"`, `${avatarHTML(x, { tam: 'g', nivel: 1 })}<b>${x.nome}</b><small>${x.especie} · ${x.jeito}</small>`, 'pers')).join('')}</div>
+      html: `<h2 class="onb-titulo">Escolha seu pet</h2>
+        <p class="onb-sub">Ele vive da sua disciplina: fica forte quando você cumpre a rotina e fraco, sujo e triste quando você some. Cuide bem dele!</p>
+        <div class="onb-pers cinco">${PERSONAGENS.filter((x) => x.inicial).map((x) => opcao(r.pet === x.id, `data-pet="${x.id}"`, `${avatarHTML(x, { tam: 'g', nivel: 1, estado: false })}<b>${x.especie}</b><small>${x.jeito}</small>`, 'pers')).join('')}</div>
+        <label class="campo"><span>Nome do pet</span><input class="entrada grande" data-campo="nomePet" maxlength="16" placeholder="${esc(p.nome)}" value="${esc(r.nomePet)}"></label>
         <div class="onb-evolucao card">
-          <small>Evolução de ${esc(p.nome)}</small>
-          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', nivel: e.nivel })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
+          <small>Evolução do seu pet (conforme seu nível)</small>
+          <div class="onb-estagios">${ESTAGIOS.map((e) => `<div>${avatarHTML(p, { tam: 'p', nivel: e.nivel, estado: false })}<small>${e.nome}<br>nív. ${e.nivel}</small></div>`).join('')}</div>
         </div>
-        <p class="dica centro">E mais ${PERSONAGENS.length - 3} personagens para desbloquear com o seu progresso 🔒</p>`,
+        <p class="dica centro">E mais ${PERSONAGENS.filter((x) => !x.inicial).length} pets para desbloquear com o seu progresso 🔒</p>`,
     };
   },
 
@@ -355,11 +375,11 @@ const TELAS = {
     const n = r.habitos.length + r.desafios.length;
     return {
       html: `<h2 class="onb-titulo">Monte sua rotina diária</h2>
-        <p class="onb-sub">Cada hábito marcado vale XP. Completar 100% no dia dá bônus e aumenta sua sequência 🔥</p>
+        <p class="onb-sub">Cada hábito tem um horário: feito até ele, vale XP cheio; depois, vale menos (75% → 50% → 25%). Dá para mudar os horários depois na Rotina.</p>
         ${r.focos.map((a) => {
           const area = AREAS.find((x) => x.id === a);
           return `<div class="onb-secao"><h3>${area.emoji} ${area.nome}</h3><div class="chips-linha">
-            ${(HABITOS[a] || []).map((h) => `<button type="button" class="chip ${sel(h.nome) ? 'on' : ''}" data-habito="${esc(h.nome)}" data-area-h="${a}">${h.emoji} ${esc(h.nome)}</button>`).join('')}
+            ${(HABITOS[a] || []).map((h) => `<button type="button" class="chip ${sel(h.nome) ? 'on' : ''}" data-habito="${esc(h.nome)}" data-area-h="${a}">${h.emoji} ${esc(h.nome)}${horarioDe(h) ? ` <small class="chip-hora">até ${horarioDe(h)}</small>` : ''}</button>`).join('')}
           </div></div>`;
         }).join('')}
         ${proprios.length ? `<div class="onb-secao"><h3>✍️ Seus hábitos</h3><div class="chips-linha">${proprios.map((h) => `<button type="button" class="chip on" data-habito="${esc(h.nome)}">${h.emoji} ${esc(h.nome)}</button>`).join('')}</div></div>` : ''}
@@ -439,7 +459,7 @@ const TELAS = {
   }),
 
   pronto: () => {
-    const p = personagem(r.personagem);
+    const p = personagem(r.pet);
     const nome = r.nome || 'campeão';
     const resumo = [
       [`🔁`, plural(r.habitos.length, 'hábito', 'hábitos')],
@@ -449,8 +469,8 @@ const TELAS = {
     if (r.focos.includes('treino')) resumo.push([`🏋️`, plural(PLANOS[r.treino.plano].fichas.length, 'ficha de treino', 'fichas de treino')]);
     return {
       html: `<div class="onb-hero">
-          ${avatarHTML(p, { tam: 'gg', nivel: 1, humor: 'radiante' })}
-          <div class="balao">Tudo pronto, ${esc(nome)}! Eu sou ${esc(p.nome)} e vou te acompanhar todo dia. Bora subir de nível juntos? 🚀</div>
+          <div class="onb-cena">${avatarSVG(r.avatar)}${avatarHTML(p, { tam: 'g', nivel: 1, humor: 'radiante', estado: false })}</div>
+          <div class="balao">Tudo pronto, ${esc(nome)}! Eu sou ${esc(r.nomePet || p.nome)} e vou te acompanhar todo dia. Cuida de mim cumprindo a rotina, combinado? 🐾</div>
           <div class="onb-resumo">${resumo.map(([e, t]) => `<span class="tag">${e} ${t}</span>`).join('')}</div>
           ${!dados().meta.bonusJornada ? `<div class="card onb-premio"><b>🎁 Presente de boas-vindas</b><span>+50 XP · 🛡️ 1 escudo de sequência · medalha "A jornada começa"</span></div>` : ''}
         </div>`,
@@ -467,8 +487,13 @@ function aoDigitar(e) {
   const c = e.target.dataset.campo;
   if (!c) return;
   if (c === 'nome') r.nome = e.target.value.trim();
+  if (c === 'nomePet') r.nomePet = e.target.value.trim();
   if (c === 'acorda' && e.target.value) {
     r.acorda = e.target.value;
+    for (const h of r.habitos) {
+      const base = Object.values(HABITOS).flat().find((x) => x.nome === h.nome);
+      if (base) h.horario = horarioDe(base);
+    }
     raiz.querySelectorAll('[data-hora]').forEach((b) => b.classList.toggle('on', b.dataset.hora === r.acorda));
   }
   if (c === 'limiteGastos') r.limiteGastos = Math.max(0, parseFloat(String(e.target.value).replace(/[R$\s.]/g, '').replace(',', '.')) || 0);
@@ -477,6 +502,8 @@ function aoDigitar(e) {
 function aoClicar(e) {
   const b = e.target.closest('button');
   if (!b || b.disabled) return;
+  // o editor do personagem cuida dos próprios cliques (e pode já ter trocado o botão)
+  if (b.closest('.onb-editor') || !raiz.contains(b)) return;
   const ds = b.dataset;
   let redesenhar = true;
   vibrar(6);
@@ -494,19 +521,23 @@ function aoClicar(e) {
     const o = OBJETIVOS.find((x) => x.id === ds.objetivo);
     if (!r.focosTocados) r.focos = [...o.focos];
   }
-  if (ds.pers) r.personagem = ds.pers;
+  if (ds.pet) r.pet = ds.pet;
   if (ds.area) {
     r.focosTocados = true;
     r.focos = r.focos.includes(ds.area) ? r.focos.filter((x) => x !== ds.area) : [...r.focos, ds.area];
   }
   if (ds.hora) r.acorda = ds.hora;
+  if (ds.hora) for (const h of r.habitos) {
+    const base = Object.values(HABITOS).flat().find((x) => x.nome === h.nome);
+    if (base) h.horario = horarioDe(base);
+  }
   if (ds.habito) {
     r.habitosTocados = true;
     const ja = r.habitos.findIndex((h) => h.nome === ds.habito);
     if (ja >= 0) r.habitos.splice(ja, 1);
     else {
       const h = (HABITOS[ds.areaH] || []).find((x) => x.nome === ds.habito);
-      r.habitos.push({ emoji: h ? h.emoji : '✅', nome: ds.habito, dias: h && h.dias ? h.dias : null });
+      r.habitos.push({ emoji: h ? h.emoji : '✅', nome: ds.habito, dias: h && h.dias ? h.dias : null, horario: h ? horarioDe(h) : null });
     }
   }
   if (ds.onb === 'add-habito') {
@@ -578,10 +609,12 @@ function pular() {
   alterar((d) => {
     if (!d.meta.exemplosCriados) criarExemplos(d);
     d.meta.onboardingFeito = true;
-    d.colecao[d.perfil.personagem] = d.colecao[d.perfil.personagem] || Date.now();
+    d.colecao[d.pet.especie] = d.colecao[d.pet.especie] || Date.now();
+    d.meta.avatarCriado = false; // mostra o criador de personagem logo depois
     ressortearMissoes();
   });
   fechar();
+  document.dispatchEvent(new CustomEvent('dib-onboarding-fim'));
 }
 
 // -------------------------------------------------------------
@@ -627,9 +660,13 @@ function concluir() {
     d.perfil.objetivo = r.objetivo;
     d.perfil.focos = [...r.focos];
     d.perfil.acorda = r.acorda;
-    d.perfil.personagem = r.personagem;
-    if (!d.colecao[r.personagem]) d.colecao[r.personagem] = Date.now();
-    if (!d.colecaoVista.includes(r.personagem)) d.colecaoVista.push(r.personagem);
+    d.avatar = { ...r.avatar };
+    d.meta.avatarCriado = true;
+    if (d.pet.especie !== r.pet) d.pet.skin = 'normal';
+    d.pet.especie = r.pet;
+    d.pet.nome = r.nomePet || personagem(r.pet).nome;
+    if (!d.colecao[r.pet]) d.colecao[r.pet] = Date.now();
+    if (!d.colecaoVista.includes(r.pet)) d.colecaoVista.push(r.pet);
 
     // Exemplos não editados saem; o que é seu fica.
     const tinhaSessoes = d.treinos.sessoes.length > 0;
@@ -641,7 +678,7 @@ function concluir() {
     // Rotina
     const existe = (nome) => d.rotina.some((i) => i.nome.toLowerCase() === nome.toLowerCase());
     for (const h of r.habitos) {
-      if (!existe(h.nome)) d.rotina.push({ id: uid(), nome: h.nome, emoji: h.emoji, xp: d.ajustes.xp.rotinaPadrao, dias: h.dias, criadoEm: hoje });
+      if (!existe(h.nome)) d.rotina.push({ id: uid(), nome: h.nome, emoji: h.emoji, xp: d.ajustes.xp.rotinaPadrao, dias: h.dias, horario: h.horario || null, criadoEm: hoje });
     }
     // Desafios matinais (blocos de check com horário)
     const novosChecks = [];
@@ -678,7 +715,7 @@ function concluir() {
     ressortearMissoes();
     // Os iniciais só entram na coleção quando escolhidos
     if (!refazendo) {
-      for (const x of PERSONAGENS) if (x.inicial && x.id !== r.personagem) delete d.colecao[x.id];
+      for (const x of PERSONAGENS) if (x.inicial && x.id !== r.pet) delete d.colecao[x.id];
       d.colecaoVista = d.colecaoVista.filter((id) => d.colecao[id]);
     }
     if (primeiraVez) {

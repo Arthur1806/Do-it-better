@@ -10,7 +10,10 @@ import { on, hojeKey } from './utils.js';
 import { fecharDias, atualizarMelhoresSequencias, resumoRotina } from './historico.js';
 import { recalcularXP } from './xp.js';
 import { verificarConquistas } from './conquistas.js';
-import { verificarPersonagens, companheiro, estagioDoNivel, novosNaColecao } from './personagens.js';
+import { verificarPersonagens, companheiro, estagioDoNivel, novosNaColecao, avatarHTML } from './personagens.js';
+import { verificarVisual, avatarSVG } from './visual.js';
+import { abrirEditorPersonagem, celebrarVisual } from './telas-personagem.js';
+import { estadoPet } from './pet.js';
 import { atualizarLiga, missoesParaResgatar, bauDisponivel } from './missoes.js';
 import { aplicarTemaCor } from './loja.js';
 import { abrirOnboarding } from './onboarding.js';
@@ -34,6 +37,7 @@ painel.sincronizarBlocos();
 atualizarMelhoresSequencias();
 // Na abertura não celebramos o que já existia: só registramos.
 verificarPersonagens();
+verificarVisual();
 atualizarLiga();
 verificarConquistas();
 Store.salvar({ silencioso: true });
@@ -75,7 +79,7 @@ on('nivel', (info) => {
   const depois = estagioDoNivel(info.nivel);
   celebrar({ emoji: '🚀', titulo: `Nível ${info.nivel}!`, subtitulo: `Você agora é ${info.titulo}. Continue assim!` });
   if (depois.estagio > antes.estagio) {
-    celebrar({ emoji: `${p.emoji}${depois.enfeite}`, titulo: `${p.nome} evoluiu!`, subtitulo: `Agora é ${depois.nome}. Vocês estão ficando lendários juntos! ✨` });
+    celebrar({ emoji: avatarHTML(p, { tam: 'g', nivel: info.nivel, estado: false }), titulo: `${p.nome} evoluiu!`, subtitulo: `Agora é ${depois.nome}. Vocês estão ficando lendários juntos! ✨` });
   }
 });
 on('conquista', (c) => {
@@ -87,7 +91,12 @@ on('conquista', (c) => {
 on('personagem', (p) => {
   if (!pronto) return;
   tocar('fanfarra');
-  celebrar({ emoji: p.emoji, titulo: 'Novo personagem!', subtitulo: `${p.nome}, ${p.especie.toLowerCase()}, entrou para a sua coleção. Veja em Perfil → Coleção.` });
+  celebrar({ emoji: avatarHTML(p, { tam: 'g', estado: false }), titulo: 'Novo pet desbloqueado!', subtitulo: `${p.especie} entrou para a sua coleção. Adote em Perfil → Personagem.` });
+});
+on('visual', (x) => {
+  if (!pronto) return;
+  tocar('fanfarra');
+  celebrarVisual(x);
 });
 window.addEventListener('dib-erro-salvar', () => toast('Não foi possível salvar: armazenamento cheio? Exporte um backup.', { tipo: 'erro', duracao: 6000 }));
 
@@ -139,7 +148,7 @@ document.getElementById('tabbar').addEventListener('click', (e) => {
 
 // Sempre que os dados mudam: verifica medalhas/personagens/liga e redesenha
 Store.aoMudar(() => {
-  const a = verificarPersonagens();
+  const a = verificarPersonagens() | verificarVisual();
   const b = !!atualizarLiga();
   const c = verificarConquistas();
   if (a || b || c) Store.salvar({ silencioso: true });
@@ -170,14 +179,24 @@ function atualizarBadges() {
     b.classList.toggle('ponto', conteudo === true);
     b.classList.toggle('alerta', alerta);
   };
-  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 ? true : '');
+  const est = d.meta.onboardingFeito ? estadoPet() : {};
+  marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 || est.sujo || est.fraco || est.triste ? true : '');
   marcar('rotina', r.total > r.feitos ? String(r.total - r.feitos) : '');
   marcar('pendencias', pend ? String(pend) : '', c.atrasadas > 0);
   marcar('treinos', d.treinos.emAndamento ? true : '');
-  marcar('perfil', novosNaColecao() > 0 ? true : '');
+  marcar('perfil', novosNaColecao() + d.visualNovos.length > 0 ? true : '');
+  // ícone da aba Perfil = o seu personagem em pixel art
   const icone = document.querySelector('.tabbar [data-aba="perfil"] .tab-avatar');
-  const p = companheiro();
-  if (icone && icone.textContent !== p.emoji) icone.textContent = p.emoji;
+  const chave = JSON.stringify(d.avatar);
+  if (icone && icone.dataset.chave !== chave) {
+    icone.innerHTML = avatarSVG(d.avatar);
+    icone.dataset.chave = chave;
+  }
+}
+
+/** Quem já usava o app (ou pulou o questionário) cria o personagem uma vez. */
+function talvezCriarPersonagem() {
+  if (d.meta.onboardingFeito && !d.meta.avatarCriado) setTimeout(() => abrirEditorPersonagem({ primeiraVez: true }), 700);
 }
 
 // ---------- Primeira entrada: questionário ----------
@@ -192,6 +211,7 @@ function iniciar() {
     d.meta.diasProtegidos = [];
     Store.salvar({ silencioso: true });
   }
+  talvezCriarPersonagem();
 }
 if (!d.meta.onboardingFeito) {
   irPara('hoje');
@@ -200,6 +220,7 @@ if (!d.meta.onboardingFeito) {
     pronto = true;
     irPara('hoje');
     atualizarBadges();
+    talvezCriarPersonagem();
   }, { once: true });
   pronto = true;
 } else {

@@ -8,6 +8,26 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 3.0
+
+- **Seu personagem em pixel art:** um boneco humano que você monta do seu jeito: tom de pele, cabelo (estilo e cor), roupa, calça, sapato, chapéu/boné e acessório, cada um com cor.
+- **Itens exclusivos por raridade:** comum, raro, épico e lendário. Os comuns são grátis, os raros estão na loja, e os épicos e lendários liberam com o progresso. Exemplos: moicano no nível 6, tranças com 14 dias seguidos, cabelo de fogo com 30 dias, traje de herói no nível 20, coroa com uma semana perfeita, terno na liga Mestre. Quando um exclusivo libera, aparece uma celebração.
+- **Pet em pixel art:** você escolhe o pet (cachorro, gato, raposa, panda ou lobo) e dá um nome a ele. Mais 13 pets liberam com o progresso, e há skins (algodão-doce, sombra, neon, dourado, fantasma).
+- **Seu pet depende de você:** ele tem 💪 força, 🧼 limpeza e 😊 alegria.
+  - Cada hábito, treino e pendência deixa o pet mais forte.
+  - Dias sem rotina deixam o pet **fraco, sujo e triste**: ele fica desbotado, com manchas de lama, moscas, olhos caídos e lágrimas.
+  - Para recuperar: carinho (1x por dia, +5 moedas), banho (grátis 1x por dia depois de cumprir 1 hábito) e itens da loja.
+  - Pet bem cuidado (tudo ≥ 70) dá **+5% de XP**.
+- **Horário nas atividades:** cada hábito da rotina pode ter um horário limite. Até ele vale 100% do XP; até 1h depois, 75%; até 3h depois, 50%; depois disso, 25%. Os desafios matinais seguem a mesma regra. As pendências podem ter horário no prazo.
+- **Loja ampliada**, com cinco abas:
+  - **Itens:** escudo, poção, super poção (XP em dobro), ampulheta (+1h em todos os horários do dia) e baú misterioso (um visual aleatório).
+  - **Pet:** petisco, ração premium, brinquedo, sabonete e kit de cuidados.
+  - **Visual:** roupas e cores.
+  - **Skins de pet.**
+  - **Temas.**
+- Missões novas: "cumpra hábitos no horário", "dê banho no pet" e "faça carinho no pet".
+- Quem já usava o app: o companheiro vira o seu pet (com o mesmo nome) e o app abre o criador de personagem uma vez. Nada é perdido (esquema de dados 2 → 3).
+
 ## Novidades da versão 2.0
 
 - **Questionário de primeira entrada:** nome, objetivo, companheiro, áreas que quer melhorar, horário em que acorda, rotina sugerida, desafios matinais, treino (local, frequência, divisão e nível), pendências da vida real e metas. O app monta tudo sob medida — inclusive a ordem do painel. Dá para refazer em **Perfil → Ajustes → Refazer personalização** (seus dados são mantidos).
@@ -36,7 +56,8 @@ do-it-better/
 ├── .nojekyll               ← avisa o GitHub Pages para servir os arquivos como estão
 ├── css/
 │   ├── style.css           ← visual base (tema escuro/claro, vidro fosco, listas, treino)
-│   └── jogo.css            ← companheiro, missões, baú, loja, coleção, questionário, navegação
+│   ├── jogo.css            ← companheiro, missões, baú, loja, coleção, questionário, navegação
+│   └── personagem.css      ← pixel art, personagem, pet, editor, loja e horários
 ├── icons/
 │   ├── icon.svg            ← ícone original (vetor)
 │   ├── apple-touch-icon.png  (180×180, usado pelo iPhone)
@@ -63,7 +84,12 @@ do-it-better/
     ├── extras.js           ← água, notas rápidas, lista de compras, gastos do mês
     ├── perfil.js           ← aba Perfil (Jornada, Coleção, Medalhas, Loja, Ajustes)
     ├── onboarding.js       ← questionário de primeira entrada (monta o app para você)
-    ├── personagens.js      ← companheiros, evolução, coleção, humor e falas
+    ├── personagens.js      ← pets (pixel art), skins, evolução, coleção, humor e falas
+    ├── pixel.js            ← motor de pixel art em SVG + desenhos do personagem e dos pets
+    ├── visual.js           ← personalização do personagem, raridades e desbloqueios
+    ├── visual-padrao.js    ← visual inicial do personagem
+    ├── pet.js              ← necessidades do pet (força, limpeza, alegria) e cuidados
+    ├── telas-personagem.js ← criador do personagem, cena personagem + pet, cuidar do pet
     ├── missoes.js          ← missões do dia, baú diário e ligas semanais
     ├── loja.js             ← itens (escudo, poção) e temas de cor
     └── sons.js             ← efeitos sonoros gerados na hora (sem arquivos de áudio)
@@ -75,10 +101,10 @@ do-it-better/
 
 | Ação | XP padrão |
 |---|---|
-| Item da rotina | 10 (editável por item) |
+| Item da rotina | 10 (editável por item), conforme o horário: 100% · 75% · 50% · 25% |
 | Rotina 100% no dia | +50 de bônus |
 | Pendência alta / média / baixa | 30 / 20 / 10 (metade se concluída depois do prazo) |
-| Bloco de check (ex.: Quarto arrumado) | o que você definir; metade depois do horário-limite |
+| Bloco de check (ex.: Quarto arrumado) | o que você definir, com a mesma regra de horário |
 | Treino finalizado | 100 |
 | Recorde de carga no treino | +50 |
 | Meta de água do dia | 15 |
@@ -170,7 +196,7 @@ git push -u origin main
 1. Edite os arquivos que quiser.
 2. Abra o `sw.js` e **aumente a versão** na linha:
    ```js
-   const VERSAO = '2.0.0';   // ex.: mude para '2.0.1'
+   const VERSAO = '3.0.0';   // ex.: mude para '3.0.1'
    ```
    Sem isso, o iPhone continua usando a versão guardada no cache.
 3. Se criou um **arquivo novo** (ex.: `js/financas.js`), adicione o caminho dele na lista `ARQUIVOS` do `sw.js`.
@@ -198,7 +224,9 @@ Seus dados **não se perdem** na atualização.
 - **Campo novo com valor padrão** (ex.: `ajustes.metaSono`): adicione em `estadoPadrao()` no `js/store.js`. Os dados antigos recebem o padrão automaticamente.
 - **Mudança de formato** (renomear ou reorganizar dados): em `js/store.js`, aumente `SCHEMA_VERSION` e escreva a migração em `MIGRACOES` (há um exemplo comentado lá).
 - **Nova medalha:** adicione uma série em `SERIES` (ou uma especial em `ESPECIAIS`) em `js/conquistas.js`.
-- **Novo personagem:** adicione em `PERSONAGENS` em `js/personagens.js`, com o requisito e a função `teste(d)`.
+- **Novo pet:** adicione em `PERSONAGENS` em `js/personagens.js` (escolha um desenho de `PET_SPRITES` em `js/pixel.js` e uma paleta de cores), com o requisito e a função `teste(d)`.
+- **Nova roupa/cabelo/chapéu:** desenhe a grade em `js/pixel.js` (16 colunas; cada letra é uma cor) e adicione a linha em `ESTILOS` em `js/visual.js` com a raridade e a forma de desbloquear.
+- **Nova cor:** adicione em `CORES` em `js/visual.js`.
 - **Nova missão:** adicione em `CATALOGO` em `js/missoes.js`.
 - **Novo item ou tema na loja:** `ITENS` e `TEMAS` em `js/loja.js`.
 - **Novo tipo de bloco no painel:** veja o comentário no topo de `js/painel.js`.

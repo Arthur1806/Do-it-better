@@ -7,7 +7,7 @@
 
 import { dados, alterar } from './store.js';
 import { hojeKey, esc, uid, MESES, DIAS_LETRA, ORDEM_SEMANA, diaSemana, formatarData, lerNumero, plural } from './utils.js';
-import { registroDia, lerDia, valeNoDia, resumoRotina, statusDia, sequenciaRotina, multiplicador, atualizarMelhoresSequencias } from './historico.js';
+import { registroDia, lerDia, valeNoDia, resumoRotina, statusDia, sequenciaRotina, multiplicador, atualizarMelhoresSequencias, fatorHorario, xpComHorario, textoHorario } from './historico.js';
 import { ganharXP, removerXP } from './xp.js';
 import {
   abrirSheet, confirmar, toast, vibrar, confete,
@@ -41,8 +41,11 @@ export function alternarItem(id) {
       removerXP(reg.rotina[id].lanc);
       delete reg.rotina[id];
     } else {
-      const l = ganharXP({ base: item.xp, fonte: 'rotina', ref: id, rotulo: item.nome });
-      reg.rotina[id] = { lanc: l.id, ts: Date.now() };
+      // XP conforme o horário: cheio até o limite, menor depois
+      const f = fatorHorario(item.horario);
+      const l = ganharXP({ base: xpComHorario(item.xp, item.horario), fonte: 'rotina', ref: id, rotulo: item.nome });
+      reg.rotina[id] = { lanc: l.id, ts: Date.now(), fator: f.fator, comHorario: !!item.horario };
+      if (item.horario && !f.noPrazo) setTimeout(() => toast(`Passou das ${item.horario}: valeu ${f.pct}% do XP ⏰`), 120);
     }
     reavaliarBonusRotina();
     atualizarMelhoresSequencias();
@@ -117,7 +120,8 @@ export function render(el) {
   const seq = sequenciaRotina();
   const mult = multiplicador();
   const reg = lerDia(hoje);
-  const deHoje = d.rotina.filter((i) => valeNoDia(i, hoje));
+  const porHorario = (a, b) => (a.horario || '99:99').localeCompare(b.horario || '99:99');
+  const deHoje = d.rotina.filter((i) => valeNoDia(i, hoje)).sort(porHorario);
   const outros = d.rotina.filter((i) => !valeNoDia(i, hoje));
   if (!d.rotina.length) editando = false;
 
@@ -127,14 +131,22 @@ export function render(el) {
   else if (r.feitos > 0) tituloResumo = `Faltam ${r.total - r.feitos}. Você consegue!`;
 
   const linha = (i) => {
-    const feito = !!(reg && reg.rotina[i.id]);
-    return `<div class="item-linha ${feito ? 'feito' : ''}">
+    const marca = reg && reg.rotina[i.id];
+    const feito = !!marca;
+    const f = fatorHorario(i.horario);
+    const atrasado = !feito && i.horario && !f.noPrazo;
+    let sub = textoDias(i.dias);
+    if (feito && marca.comHorario) sub = marca.fator === 1 ? `✓ no horário (até ${i.horario})` : `✓ com atraso · ${Math.round(marca.fator * 100)}% do XP`;
+    else if (i.horario) sub = textoHorario(i.horario);
+    const xp = feito ? '' : `+${xpComHorario(i.xp, i.horario)}`;
+    return `<div class="item-linha ${feito ? 'feito' : ''} ${atrasado ? 'atrasado' : ''}">
       <button class="check-circulo ${feito ? 'on' : ''}" data-acao="alternar" data-id="${i.id}" aria-label="${feito ? 'Desmarcar' : 'Marcar'} ${esc(i.nome)}">${ICONE_CHECK}</button>
       <button class="item-info" data-acao="alternar" data-id="${i.id}">
         <span class="item-nome"><span class="item-emoji">${esc(i.emoji || '✅')}</span>${esc(i.nome)}</span>
-        <span class="item-sub">${textoDias(i.dias)}</span>
+        <span class="item-sub ${atrasado ? 'texto-atraso' : ''}">${sub}</span>
       </button>
-      <span class="xp-badge">+${i.xp}</span>
+      ${i.horario && !feito ? `<span class="hora-chip ${atrasado ? 'atrasado' : f.falta <= 60 ? 'perto' : ''}">${i.horario}</span>` : ''}
+      <span class="xp-badge ${atrasado ? 'reduzido' : ''}">${xp}</span>
     </div>`;
   };
 
@@ -142,7 +154,7 @@ export function render(el) {
       <span class="alca" aria-label="Arrastar">${ICONE_ALCA}</span>
       <button class="item-info" data-acao="editar" data-id="${i.id}">
         <span class="item-nome"><span class="item-emoji">${esc(i.emoji || '✅')}</span>${esc(i.nome)}</span>
-        <span class="item-sub">${textoDias(i.dias)} · ${i.xp} XP</span>
+        <span class="item-sub">${textoDias(i.dias)}${i.horario ? ` · até ${i.horario}` : ''} · ${i.xp} XP</span>
       </button>
       <button class="btn-icone" data-acao="editar" data-id="${i.id}" aria-label="Editar">${ICONE_EDITAR}</button>
       <button class="btn-icone perigo-texto" data-acao="excluir" data-id="${i.id}" aria-label="Excluir">${ICONE_LIXO}</button>
@@ -181,6 +193,7 @@ export function render(el) {
           <span>🔥 ${plural(seq, 'dia seguido', 'dias seguidos')}</span>
           <span>⚡ Multiplicador: ${mult ? `<b class="neon">+${mult}%</b>` : 'inativo'}</span>
           <span>🎁 +${d.ajustes.xp.rotinaBonus} XP ao completar 100%</span>
+          <span>⏰ Fora do horário o XP cai: 75% → 50% → 25%</span>
         </div>
       </div>
     </section>
@@ -280,6 +293,14 @@ export function abrirFormItem(item = null) {
     <label class="campo"><span>XP por dia cumprido</span>
       <input class="entrada" name="xp" inputmode="numeric" value="${item ? item.xp : d.ajustes.xp.rotinaPadrao}">
     </label>
+    <div class="campo"><span>Horário limite</span>
+      <div class="chips-linha">
+        ${['07:00', '09:00', '12:00', '18:00', '21:00', '23:00'].map((h) => `<button type="button" class="chip" data-hora="${h}">${h}</button>`).join('')}
+        <button type="button" class="chip" data-hora="">Sem horário</button>
+      </div>
+      <input class="entrada" type="time" name="horario" value="${item && item.horario ? item.horario : ''}">
+      <small class="dica">Feito até o horário vale XP cheio. Depois: 75% (até 1h), 50% (até 3h) e 25%.</small>
+    </div>
     <div class="campo"><span>Repetir nos dias</span>
       ${seletorDiasHTML(item ? item.dias : null)}
       <small class="dica">Todos marcados = todo dia. Desmarque os dias em que não vale.</small>
@@ -298,6 +319,10 @@ export function abrirFormItem(item = null) {
       ligarSeletorEmoji(corpo);
       const form = corpo.querySelector('form');
       if (novo) setTimeout(() => form.elements.nome.focus(), 320);
+      corpo.addEventListener('click', (e) => {
+        const h = e.target.closest('[data-hora]');
+        if (h) form.elements.horario.value = h.dataset.hora;
+      });
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const nome = form.elements.nome.value.trim();
@@ -308,9 +333,10 @@ export function abrirFormItem(item = null) {
         const xp = Math.max(0, Math.round(lerNumero(form.elements.xp.value, d.ajustes.xp.rotinaPadrao)));
         const dias = lerDias(corpo);
         const emoji = form.elements.emoji.value.trim() || '✅';
+        const horario = form.elements.horario.value || null;
         alterar(() => {
-          if (novo) d.rotina.push({ id: uid(), nome, emoji, xp, dias, criadoEm: hojeKey() });
-          else Object.assign(item, { nome, emoji, xp, dias, exemplo: false });
+          if (novo) d.rotina.push({ id: uid(), nome, emoji, xp, dias, horario, criadoEm: hojeKey() });
+          else Object.assign(item, { nome, emoji, xp, dias, horario, exemplo: false });
           reavaliarBonusRotina();
         });
         fechar();

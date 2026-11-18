@@ -44,7 +44,7 @@ export const SERIES = [
   { id: 'presenca', emoji: '📅', nome: 'Presença', unidade: 'dias seguidos abrindo o baú', niveis: [3, 7, 30, 100], valor: (d) => d.stats.melhorCheckin || 0 },
   { id: 'nivel', emoji: '⭐', nome: 'Evolução', unidade: 'de nível', niveis: [5, 10, 20, 30], valor: (d) => nivelInfo(d.xp.total).nivel },
   { id: 'xp', emoji: '💠', nome: 'Colecionador de XP', unidade: 'XP no total', niveis: [1000, 5000, 20000, 50000], valor: (d) => d.xp.total },
-  { id: 'colecao', emoji: '🐾', nome: 'Domador', unidade: 'personagens na coleção', niveis: [2, 5, 10, PERSONAGENS.length], valor: (d) => Object.keys(d.colecao).length },
+  { id: 'colecao', emoji: '🐾', nome: 'Domador', unidade: 'pets na coleção', niveis: [2, 5, 10, PERSONAGENS.length], valor: (d) => Object.keys(d.colecao).length },
 ];
 
 /**

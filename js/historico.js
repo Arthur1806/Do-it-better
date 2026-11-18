@@ -7,7 +7,8 @@
 // =============================================================
 
 import { dados } from './store.js';
-import { hojeKey, somarDias, diaSemana, diasDaSemana } from './utils.js';
+import { hojeKey, somarDias, diaSemana, diasDaSemana, horaAtual } from './utils.js';
+import { fecharDiaDoPet } from './pet.js';
 
 /** Registro do dia (cria se não existir). */
 export function registroDia(dia) {
@@ -179,6 +180,9 @@ export function fecharDias() {
     const reg = registroDia(dia);
     if (!reg.resumo) {
       reg.resumo = calcularResumo(dia);
+      // o pet sente como foi o seu dia (ver pet.js)
+      const st = reg.resumo.total === 0 ? 'neutro' : reg.resumo.feitos >= reg.resumo.total ? 'cumprido' : reg.resumo.feitos > 0 ? 'parcial' : 'falhou';
+      fecharDiaDoPet(st);
       // ESCUDO DE SEQUÊNCIA: um dia falhado é protegido se houver escudo
       // e se havia uma sequência para proteger.
       const r = reg.resumo;
@@ -216,4 +220,57 @@ function sequenciaAte(diaFalho) {
 /** Status de cada dia da semana atual (segunda a domingo). */
 export function semanaAtual() {
   return diasDaSemana(hojeKey()).map((dia) => ({ dia, status: statusDia(dia) }));
+}
+
+// -------------------------------------------------------------
+// HORÁRIOS: cada atividade pode ter um horário limite.
+// Até o horário vale 100% do XP; depois, vai diminuindo:
+//   até 1h depois: 75% · até 3h depois: 50% · mais que isso: 25%
+// A ampulheta da loja dá +1h de folga em todos os horários do dia.
+// -------------------------------------------------------------
+
+export const FAIXAS_HORARIO = [
+  { ate: 0, fator: 1 },
+  { ate: 60, fator: 0.75 },
+  { ate: 180, fator: 0.5 },
+  { ate: Infinity, fator: 0.25 },
+];
+
+const emMinutos = (hhmm) => {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  return h * 60 + (m || 0);
+};
+
+/** A ampulheta está ativa hoje? */
+export function ampulhetaAtiva() {
+  const c = dados().carteira;
+  return !!c && c.ampulhetaDia === hojeKey();
+}
+
+/**
+ * Quanto vale agora uma atividade com horário limite.
+ * Retorna { fator, atraso (min), pct, noPrazo, falta (min até o limite) }
+ */
+export function fatorHorario(limite, agora = horaAtual()) {
+  if (!limite) return { fator: 1, atraso: 0, pct: 100, noPrazo: true, falta: null };
+  const folga = ampulhetaAtiva() ? 60 : 0;
+  const atraso = emMinutos(agora) - (emMinutos(limite) + folga);
+  const faixa = FAIXAS_HORARIO.find((f) => atraso <= f.ate);
+  return { fator: faixa.fator, atraso: Math.max(0, atraso), pct: Math.round(faixa.fator * 100), noPrazo: atraso <= 0, falta: atraso <= 0 ? -atraso : 0 };
+}
+
+/** XP que a atividade vale agora (já com o horário). */
+export function xpComHorario(base, limite) {
+  return Math.max(1, Math.round(base * fatorHorario(limite).fator));
+}
+
+/** Texto curto do horário: "até 08:00", "faltam 20 min", "atrasado · 75%". */
+export function textoHorario(limite) {
+  if (!limite) return '';
+  const f = fatorHorario(limite);
+  if (f.noPrazo) {
+    if (f.falta <= 60) return `⏰ faltam ${f.falta} min (até ${limite})`;
+    return `⏰ até ${limite}`;
+  }
+  return `⚠️ atrasado · agora vale ${f.pct}%`;
 }

@@ -7,7 +7,7 @@
 // Se criar um arquivo novo, adicione-o também na lista ARQUIVOS.
 // =============================================================
 
-const VERSAO = '2.0.0';
+const VERSAO = '3.0.0';
 const CACHE = `do-it-better-v${VERSAO}`;
 
 // Todos os caminhos são relativos (o site roda em /do-it-better/)
@@ -17,6 +17,7 @@ const ARQUIVOS = [
   './manifest.json',
   './css/style.css',
   './css/jogo.css',
+  './css/personagem.css',
   './js/app.js',
   './js/store.js',
   './js/utils.js',
@@ -38,6 +39,11 @@ const ARQUIVOS = [
   './js/loja.js',
   './js/onboarding.js',
   './js/sons.js',
+  './js/pixel.js',
+  './js/visual.js',
+  './js/visual-padrao.js',
+  './js/pet.js',
+  './js/telas-personagem.js',
   './icons/icon.svg',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',

@@ -13,7 +13,7 @@ import {
   hojeKey, esc, uid, saudacao, DIAS_LONGOS, DIAS_LETRA, formatarData, formatarMoeda, formatarHora,
   horaAtual, diasDaSemana, diaSemana, lerNumero, plural, MESES,
 } from './utils.js';
-import { registroDia, lerDia, valeNoDia, resumoRotina, sequenciaRotina, multiplicador, checkFeito, sequenciaCheck, atualizarMelhoresSequencias, itensRotinaDoDia } from './historico.js';
+import { registroDia, lerDia, valeNoDia, resumoRotina, sequenciaRotina, multiplicador, checkFeito, sequenciaCheck, atualizarMelhoresSequencias, itensRotinaDoDia, fatorHorario, xpComHorario, textoHorario } from './historico.js';
 import { ganharXP, removerXP, nivelInfo, xpDoDia } from './xp.js';
 import { alternarItem } from './rotina.js';
 import { contagens, listar, concluir } from './pendencias.js';
@@ -29,7 +29,9 @@ import { irPara } from './nav.js';
 import { BLOCOS_FIXOS } from './seed.js';
 import { companheiro, avatarHTML, humor, fala } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
-import { pocaoAtiva } from './xp.js';
+import { pocaoAtiva, bonusPocao } from './xp.js';
+import { cenaHTML, barrasPetHTML, abrirEditorPersonagem, abrirCuidarPet } from './telas-personagem.js';
+import { estadoPet, bonusPet, cuidar } from './pet.js';
 import { tocar } from './sons.js';
 import { confete, celebrar } from './ui.js';
 
@@ -82,10 +84,9 @@ export function sincronizarBlocos() {
 // Blocos de check
 // -------------------------------------------------------------
 
-/** XP que o check vale AGORA (metade depois do horário-limite). */
+/** XP que o check vale AGORA (regra de horários: 100% · 75% · 50% · 25%). */
 function xpCheckAgora(c) {
-  if (c.horaLimite && horaAtual() > c.horaLimite) return Math.round(c.xp / 2);
-  return c.xp;
+  return xpComHorario(c.xp, c.horaLimite);
 }
 
 /** Marca/desmarca um bloco de check hoje. */
@@ -106,12 +107,13 @@ export function alternarCheck(id) {
       if (reg.checks[c.id].noPrazo) d.stats.checksCedo = Math.max(0, (d.stats.checksCedo || 0) - 1);
       delete reg.checks[c.id];
     } else {
-      const atrasado = c.horaLimite && horaAtual() > c.horaLimite;
+      const f = fatorHorario(c.horaLimite);
+      const atrasado = !!c.horaLimite && !f.noPrazo;
       const l = ganharXP({ base: xpCheckAgora(c), fonte: 'check', ref: c.id, rotulo: c.nome });
       const noPrazo = !!c.horaLimite && !atrasado;
-      reg.checks[c.id] = { lanc: l.id, ts: Date.now(), noPrazo };
+      reg.checks[c.id] = { lanc: l.id, ts: Date.now(), noPrazo, fator: f.fator };
       if (noPrazo) d.stats.checksCedo = (d.stats.checksCedo || 0) + 1;
-      if (atrasado) setTimeout(() => toast(`Depois das ${c.horaLimite} vale metade do XP`), 100);
+      if (atrasado) setTimeout(() => toast(`Passou das ${c.horaLimite}: valeu ${f.pct}% do XP ⏰`), 100);
     }
     atualizarMelhoresSequencias();
   });
@@ -131,7 +133,7 @@ export function abrirFormCheck(c = null) {
     <div class="campo"><span>Dias em que vale</span>${seletorDiasHTML(c ? c.dias : null)}</div>
     <label class="campo"><span>Horário limite (opcional)</span>
       <input class="entrada" type="time" name="horaLimite" value="${c && c.horaLimite ? c.horaLimite : ''}">
-      <small class="dica">Marcado até esse horário vale o XP cheio; depois, metade.</small>
+      <small class="dica">Até o horário vale o XP cheio. Depois: 75% (até 1h), 50% (até 3h) e 25%.</small>
     </label>
     <div class="form-botoes">
       ${!novo ? '<button type="button" class="btn perigo-texto" data-excluir>Excluir bloco</button>' : ''}
@@ -227,7 +229,8 @@ const CONTEUDO = {
     const reg = lerDia(hoje);
     const itens = itensRotinaDoDia(hoje);
     const completo = r.total > 0 && r.feitos >= r.total;
-    const rodape = r.total === 0 ? 'Nada programado' : completo ? 'Completa! 🎉' : `Faltam ${r.total - r.feitos}`;
+    const proximo = itens.filter((i) => i.horario && !(reg && reg.rotina[i.id])).sort((a, b) => a.horario.localeCompare(b.horario))[0];
+    const rodape = r.total === 0 ? 'Nada programado' : completo ? 'Completa! 🎉' : proximo ? `<span class="${fatorHorario(proximo.horario).noPrazo ? '' : 'texto-atraso'}">⏰ ${esc(proximo.nome.length > 14 && !g ? proximo.nome.slice(0, 13) + '…' : proximo.nome)} ${proximo.horario}</span>` : `Faltam ${r.total - r.feitos}`;
     return `${topo('✅', 'Rotina do dia')}
       <div class="bloco-corpo ${g ? 'lado' : ''}">
         ${anel(r.total ? r.feitos / r.total : 0, { tam: g ? 76 : 70, esp: 8, html: `<strong>${r.feitos}</strong><small>/${r.total}</small>` })}
@@ -355,7 +358,7 @@ const CONTEUDO = {
     let status;
     if (!vale) status = '<small class="apagado">Folga hoje 😌</small>';
     else if (feito) status = `<small>Feito às ${formatarHora(feito.ts)}</small>`;
-    else status = `<small>${c.horaLimite ? (horaAtual() > c.horaLimite ? `${xpCheckAgora(c)} XP (após ${c.horaLimite})` : `${c.xp} XP até ${c.horaLimite}`) : `${c.xp} XP`}</small>`;
+    else status = `<small class="${c.horaLimite && !fatorHorario(c.horaLimite).noPrazo ? 'texto-atraso' : ''}">${c.horaLimite ? `${xpCheckAgora(c)} XP · ${textoHorario(c.horaLimite).replace(/^⏰ /, '')}` : `${c.xp} XP`}</small>`;
     return `${topo(esc(c.emoji || '✅'), c.nome)}
       <div class="bloco-corpo coluna check-corpo">
         <div class="check-grande ${feito ? 'on' : ''} ${!vale ? 'desligado' : ''}">${ICONE_CHECK}</div>
@@ -447,6 +450,12 @@ export function montar(el) {
       case 'companheiro':
         tocarCompanheiro(el);
         break;
+      case 'editar-personagem':
+        if (!editando) abrirEditorPersonagem();
+        break;
+      case 'cuidar-pet':
+        if (!editando) abrirCuidarPet();
+        break;
       case 'bau':
         abrirBauAnimado();
         break;
@@ -501,6 +510,7 @@ export function render(el, params = {}) {
   const h = new Date().getHours();
   const emRisco = h >= 17 && r.total > 0 && r.feitos < r.total && seqOntem > 0;
   const pocao = pocaoAtiva();
+  const estPet = estadoPet();
 
   el.innerHTML = `
     <header class="topo-hoje">
@@ -513,9 +523,10 @@ export function render(el, params = {}) {
 
     <section class="placar card">
       <div class="placar-topo">
-        <button class="placar-avatar" data-acao="companheiro" aria-label="Falar com ${esc(p.nome)}">
-          ${avatarHTML(p, { tam: 'g', nivel: info.nivel, humor: hu })}
-        </button>
+        <div class="placar-cena">
+          ${cenaHTML({ tam: 'm' })}
+          ${barrasPetHTML(true)}
+        </div>
         <div class="placar-saudacao">
           <h1>${saudacao()}${nome}!</h1>
           <p>${DIAS_LONGOS[diaSemana(hoje)].replace(/^./, (c) => c.toUpperCase())}, ${formatarData(hoje)}</p>
@@ -525,7 +536,7 @@ export function render(el, params = {}) {
       <div class="placar-linha" data-acao="ir-perfil">
         <div class="nivel-badge" aria-label="Nível ${info.nivel}"><small>NÍVEL</small><strong>${info.nivel}</strong></div>
         <div class="placar-xp">
-          <div class="placar-titulo"><span>${info.titulo}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +50%</span>` : ''}</div>
+          <div class="placar-titulo"><span>${info.titulo}</span>${mult ? `<span class="tag tag-neon">🔥 +${mult}%</span>` : ''}${pocao ? `<span class="tag tag-pocao">🧪 +${bonusPocao()}%</span>` : ''}${bonusPet() ? '<span class="tag tag-pet">🐾 +5%</span>' : ''}</div>
           <div class="barra-xp"><div class="barra-xp-fill" style="width:${pctInicial}%"></div></div>
           <small>${info.xpNoNivel} / ${info.xpParaProximo} XP · faltam ${info.falta}</small>
         </div>
@@ -537,6 +548,11 @@ export function render(el, params = {}) {
         <span class="banner-emoji balanca">🎁</span>
         <span class="banner-texto"><b>Baú diário disponível!</b><small>${d.stats.ultimoCheckin && d.stats.checkinSeq ? `Presença: ${d.stats.checkinSeq} dia(s) seguidos · quanto mais seguido, maior o prêmio` : 'Abra todo dia: prêmios crescem com a sua presença'}</small></span>
         <span class="banner-cta">Abrir</span>
+      </button>` : ''}
+    ${!editando && (estPet.fraco || estPet.sujo || estPet.triste) ? `<button class="banner banner-pet" data-acao="cuidar-pet">
+        <span class="banner-pet-img">${avatarHTML(p, { tam: 'p' })}</span>
+        <span class="banner-texto"><b>${esc(p.nome)} precisa de você!</b><small>${estPet.fraco ? 'Está fraco: cumpra hábitos para devolver a força. ' : ''}${estPet.sujo ? 'Está sujo: cumpra 1 hábito e dê um banho. ' : ''}${estPet.triste && !estPet.fraco ? 'Está tristinho: faça um carinho.' : ''}</small></span>
+        <span class="banner-cta">Cuidar</span>
       </button>` : ''}
     ${!editando && emRisco ? `<button class="banner banner-risco" data-acao="ir-rotina">
         <span class="banner-emoji pulsa">🔥</span>
@@ -574,23 +590,17 @@ export function render(el, params = {}) {
 // Companheiro, baú e missões
 // -------------------------------------------------------------
 
-/** Tocar no companheiro: nova fala, pulinho e (1x por dia) um carinho que dá moedas. */
+/** Tocar no balão: nova fala do pet e (1x por dia) um carinho que dá moedas. */
 function tocarCompanheiro(el) {
   variacaoFala++;
-  const d = dados();
-  const reg = registroDia(hojeKey());
-  const p = companheiro();
-  if (!reg.carinho) {
-    alterar(() => {
-      reg.carinho = true;
-      d.carteira.moedas += 5;
-    });
+  let res;
+  alterar(() => (res = cuidar('carinho')), { silencioso: true });
+  if (res && res.moeda) {
     tocar('moeda');
-    toast(`${p.nome} ficou feliz com o carinho! +5 🪙`);
-  } else {
-    render(el);
+    toast(res.msg);
   }
-  const av = el.querySelector('.placar-avatar .avatar');
+  render(el);
+  const av = el.querySelector('.cena-pet .avatar');
   if (av) {
     av.classList.remove('pula');
     void av.offsetWidth;

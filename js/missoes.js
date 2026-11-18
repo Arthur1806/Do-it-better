@@ -116,6 +116,39 @@ const CATALOGO = {
     progresso: () => xpDoDia(hojeKey()),
     xp: 30,
   },
+  'no-horario': {
+    icone: '⏱️',
+    texto: (a) => `Cumpra ${a} hábitos dentro do horário`,
+    pode: (d) => d.rotina.filter((i) => i.horario).length >= 2,
+    alvo: (d) => Math.min(3, d.rotina.filter((i) => i.horario).length),
+    progresso: () => {
+      const reg = lerDia(hojeKey());
+      return reg ? Object.values(reg.rotina).filter((x) => x.fator === 1 && x.comHorario).length : 0;
+    },
+    xp: 35,
+  },
+  banho: {
+    icone: '🛁',
+    texto: () => 'Dê banho no seu pet',
+    pode: (d) => d.meta.onboardingFeito && d.pet.limpeza < 85,
+    alvo: () => 1,
+    progresso: () => {
+      const reg = lerDia(hojeKey());
+      return reg && reg.banho ? 1 : 0;
+    },
+    xp: 20,
+  },
+  carinho: {
+    icone: '🤚',
+    texto: () => 'Faça carinho no seu pet',
+    pode: (d) => d.meta.onboardingFeito,
+    alvo: () => 1,
+    progresso: () => {
+      const reg = lerDia(hojeKey());
+      return reg && reg.carinho ? 1 : 0;
+    },
+    xp: 10,
+  },
   nota: {
     icone: '🗒️',
     texto: () => 'Anote uma ideia nas notas rápidas',
@@ -236,6 +269,7 @@ export function abrirBau() {
     d.carteira.escudos++;
     r = { tipo: 'escudo', valor: 1, raro: true };
   } else if (premio.tipo === 'pocao') {
+    if (!((d.carteira.boostAte || 0) > Date.now())) d.carteira.boostPct = 50;
     d.carteira.boostAte = Math.max(Date.now(), d.carteira.boostAte || 0) + 30 * 60 * 1000;
     r = { tipo: 'pocao', valor: 30, raro: true };
   } else {

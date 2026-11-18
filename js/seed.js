@@ -33,9 +33,9 @@ export function criarExemplos(d) {
   const hoje = hojeKey();
 
   d.rotina = [
-    { id: uid(), nome: 'Ler 20 minutos', emoji: '📖', xp: 10, dias: null, criadoEm: hoje, exemplo: true },
-    { id: uid(), nome: 'Meditar 10 minutos', emoji: '🧘', xp: 10, dias: null, criadoEm: hoje, exemplo: true },
-    { id: uid(), nome: 'Planejar o dia seguinte', emoji: '📝', xp: 10, dias: [1, 2, 3, 4, 5], criadoEm: hoje, exemplo: true },
+    { id: uid(), nome: 'Ler 20 minutos', emoji: '📖', xp: 10, dias: null, horario: '22:00', criadoEm: hoje, exemplo: true },
+    { id: uid(), nome: 'Meditar 10 minutos', emoji: '🧘', xp: 10, dias: null, horario: '09:00', criadoEm: hoje, exemplo: true },
+    { id: uid(), nome: 'Planejar o dia seguinte', emoji: '📝', xp: 10, dias: [1, 2, 3, 4, 5], horario: '21:00', criadoEm: hoje, exemplo: true },
   ];
 
   d.checks = [

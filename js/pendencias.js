@@ -6,7 +6,7 @@
 // =============================================================
 
 import { dados, alterar } from './store.js';
-import { hojeKey, somarDias, esc, uid, rotuloPrazo, formatarDataHora } from './utils.js';
+import { hojeKey, somarDias, esc, uid, rotuloPrazo, formatarDataHora, horaAtual } from './utils.js';
 import { ganharXP, removerXP } from './xp.js';
 import { abrirSheet, confirmar, toast, vibrar, vazioHTML, ICONE_CHECK, ICONE_MAIS, ICONE_ORDENAR } from './ui.js';
 
@@ -22,9 +22,16 @@ export function xpDaPrioridade(p) {
   return p === 'alta' ? x.pendAlta : p === 'baixa' ? x.pendBaixa : x.pendMedia;
 }
 
-/** Pendência atrasada = aberta e com prazo antes de hoje. */
+/** Passou do prazo? (dia do prazo + horário, se houver) */
+export function passouDoPrazo(p, hoje = hojeKey()) {
+  if (!p.prazo) return false;
+  if (hoje > p.prazo) return true;
+  return hoje === p.prazo && !!p.hora && horaAtual() > p.hora;
+}
+
+/** Pendência atrasada = aberta e fora do prazo. */
 function atrasada(p, hoje = hojeKey()) {
-  return !p.concluidaEm && p.prazo && p.prazo < hoje;
+  return !p.concluidaEm && passouDoPrazo(p, hoje);
 }
 
 /** Contagens usadas no painel e nos filtros. */
@@ -34,7 +41,7 @@ export function contagens() {
   return {
     todas: abertas.length,
     hoje: abertas.filter((p) => p.prazo === hoje).length,
-    atrasadas: abertas.filter((p) => p.prazo && p.prazo < hoje).length,
+    atrasadas: abertas.filter((p) => passouDoPrazo(p, hoje)).length,
     proximas: abertas.filter((p) => p.prazo && p.prazo > hoje).length,
     concluidas: dados().pendencias.length - abertas.length,
   };
@@ -49,7 +56,7 @@ export function listar(f = filtro, o = ordem) {
   }
   l = l.filter((p) => !p.concluidaEm);
   if (f === 'hoje') l = l.filter((p) => p.prazo === hoje);
-  if (f === 'atrasadas') l = l.filter((p) => p.prazo && p.prazo < hoje);
+  if (f === 'atrasadas') l = l.filter((p) => passouDoPrazo(p, hoje));
   if (f === 'proximas') l = l.filter((p) => p.prazo && p.prazo > hoje);
   if (f === 'hoje-e-atrasadas') l = l.filter((p) => p.prazo && p.prazo <= hoje);
   const porPrazo = (a, b) => (a.prazo || '9999') .localeCompare(b.prazo || '9999');
@@ -66,7 +73,7 @@ export function concluir(id) {
   let lanc;
   alterar(() => {
     const hoje = hojeKey();
-    const atrasou = p.prazo && hoje > p.prazo;
+    const atrasou = passouDoPrazo(p, hoje);
     let base = xpDaPrioridade(p.prioridade);
     if (atrasou) base = Math.round(base / 2);
     lanc = ganharXP({ base, fonte: 'pendencia', ref: p.id, rotulo: p.titulo });
@@ -207,7 +214,7 @@ export function render(el, params = {}) {
     const xp = feita ? p.xpGanho : xpDaPrioridade(p.prioridade);
     const late = atrasada(p, hoje);
     const prazo = p.prazo
-      ? `<span class="tag ${late ? 'tag-perigo' : p.prazo === hoje ? 'tag-alerta' : ''}">📅 ${late ? 'Atrasada · ' : ''}${rotuloPrazo(p.prazo)}</span>`
+      ? `<span class="tag ${late ? 'tag-perigo' : p.prazo === hoje ? 'tag-alerta' : ''}">📅 ${late ? 'Atrasada · ' : ''}${rotuloPrazo(p.prazo)}${p.hora ? ` até ${p.hora}` : ''}</span>`
       : '';
     return `<div class="pend-swipe" data-id="${p.id}">
       <div class="pend-fundo" aria-hidden="true"><span class="fundo-concluir">${ICONE_CHECK} ${feita ? 'Reabrir' : 'Concluir'}</span><span class="fundo-editar">Editar ✎</span></div>
@@ -276,7 +283,11 @@ export function abrirFormPendencia(p = null) {
         <button type="button" class="chip" data-prazo="${somarDias(hoje, 7)}">Em 1 semana</button>
         <button type="button" class="chip" data-prazo="">Sem prazo</button>
       </div>
-      <input class="entrada" type="date" name="prazo" value="${p && p.prazo ? p.prazo : ''}">
+      <div class="linha-form">
+        <input class="entrada" type="date" name="prazo" value="${p && p.prazo ? p.prazo : ''}" aria-label="Data do prazo">
+        <input class="entrada" type="time" name="hora" value="${p && p.hora ? p.hora : ''}" aria-label="Horário do prazo">
+      </div>
+      <small class="dica">O horário é opcional. Concluída depois do prazo vale metade do XP.</small>
     </div>
     <div class="campo"><span>Prioridade</span>
       <div class="segmentado" data-grupo="prioridade">
@@ -290,7 +301,6 @@ export function abrirFormPendencia(p = null) {
       </div>
       <input class="entrada" name="novaEtiqueta" maxlength="24" placeholder="Ou crie uma nova etiqueta">
     </div>
-    <small class="dica">Concluída depois do prazo vale metade do XP.</small>
     <div class="form-botoes">
       ${!nova ? '<button type="button" class="btn perigo-texto" data-acao="excluir-form">Excluir</button>' : ''}
       <button class="btn primario largo" type="submit">${nova ? 'Adicionar' : 'Salvar'}</button>
@@ -335,6 +345,7 @@ export function abrirFormPendencia(p = null) {
           titulo,
           descricao: form.elements.descricao.value.trim(),
           prazo: form.elements.prazo.value || null,
+          hora: form.elements.prazo.value ? form.elements.hora.value || null : null,
           prioridade,
           etiqueta: etq || '',
         };

@@ -13,9 +13,10 @@
 // =============================================================
 
 import { hojeKey } from './utils.js';
+import { AVATAR_PADRAO } from './visual-padrao.js';
 
 /** Versão atual do formato dos dados. Aumente ao criar uma migração. */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /** Chave usada no localStorage. */
 const CHAVE = 'doitbetter:dados';
@@ -35,6 +36,22 @@ export function estadoPadrao() {
       ultimoDia: hojeKey(), // último dia "aberto" (para detectar a virada do dia)
       exemplosCriados: false,
       onboardingFeito: false, // questionário de primeira entrada
+      avatarCriado: false, // já montou o personagem?
+    },
+    // Personagem do jogador (boneco em pixel art)
+    avatar: { ...AVATAR_PADRAO },
+    guardaRoupa: [], // itens de visual comprados na loja (ex.: 'cabelo:coque')
+    visualVisto: [], // itens de progresso já liberados
+    visualNovos: [], // liberados e ainda não vistos
+    // O pet e suas necessidades (0 a 100)
+    pet: {
+      especie: 'cachorro',
+      nome: '',
+      skin: 'normal',
+      forca: 85,
+      limpeza: 85,
+      alegria: 85,
+      diasSemCuidado: 0,
     },
     // Perfil do jogador (preenchido no questionário de primeira entrada)
     perfil: {
@@ -48,12 +65,16 @@ export function estadoPadrao() {
       moedas: 0,
       escudos: 0, // protegem a sequência em um dia falhado
       boostAte: 0, // poção de XP ativa até este timestamp
+      boostPct: 50, // força da poção ativa (%)
+      ampulhetaDia: null, // dia em que a ampulheta (+1h nos horários) está ativa
+      inventario: { petisco: 1, racao: 0, brinquedo: 0, sabonete: 1, kit: 0, ampulheta: 0, bauMisterioso: 0 },
     },
     colecao: {}, // { idPersonagem: timestampDoDesbloqueio }
     colecaoVista: [], // personagens já vistos (para o aviso de "novo")
     loja: {
       temas: ['neon'],
       temaAtivo: 'neon',
+      skinsPet: ['normal'],
     },
     ajustes: {
       nome: '',
@@ -93,7 +114,7 @@ export function estadoPadrao() {
     // Painel (tela Hoje): ordem, visibilidade e tamanho dos blocos
     painel: [], // { id, tipo, ref?, ativo, tamanho: 'p' | 'g' }
     // Rotina: itens recorrentes
-    rotina: [], // { id, nome, emoji, xp, dias: null | [0..6], criadoEm, exemplo }
+    rotina: [], // { id, nome, emoji, xp, dias: null | [0..6], horario: 'HH:MM' | null, criadoEm, exemplo }
     // Blocos de check personalizados (ex.: Quarto arrumado)
     checks: [], // { id, chave, nome, emoji, xp, dias, horaLimite, criadoEm, melhorSequencia, exemplo }
     // Registro de cada dia (é aqui que os checks diários "reiniciam": cada dia tem o seu)
@@ -148,6 +169,27 @@ const MIGRACOES = {
     for (const [k, ts] of Object.entries(d.conquistas || {})) novas[mapa[k] || k] = ts;
     delete novas['primeiro-xp'];
     d.conquistas = novas;
+    return d;
+  },
+
+  // 3: personagem humano em pixel art + pet com necessidades + horários.
+  // O companheiro antigo (emoji) vira o seu pet, com o mesmo nome.
+  3: (d) => {
+    const mapa = {
+      raposa: 'raposa', panda: 'panda', lobo: 'lobo', gato: 'gato', tartaruga: 'tartaruga', coruja: 'coruja',
+      abelha: 'pinguim', leao: 'urso', golfinho: 'slime', galo: 'pintinho', polvo: 'pantera', robo: 'robo',
+      tubarao: 'husky', aguia: 'fenix', unicornio: 'dragaoGelo', dragao: 'dragao',
+    };
+    const nomes = { raposa: 'Kira', panda: 'Bao', lobo: 'Rex' };
+    const antigo = (d.perfil && d.perfil.personagem) || 'raposa';
+    d.pet = { especie: mapa[antigo] || 'cachorro', nome: nomes[antigo] || '', skin: 'normal', forca: 85, limpeza: 85, alegria: 85, diasSemCuidado: 0 };
+    const colecao = {};
+    for (const [k, ts] of Object.entries(d.colecao || {})) if (mapa[k]) colecao[mapa[k]] = ts;
+    d.colecao = colecao;
+    d.colecaoVista = Object.keys(colecao);
+    d.meta = d.meta || {};
+    d.meta.avatarCriado = false; // o app abre o criador de personagem uma vez
+    d.meta.novidadeV3 = true; // mostra a explicação da novidade no criador
     return d;
   },
 };
