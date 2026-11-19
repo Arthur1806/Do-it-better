@@ -179,7 +179,7 @@ window.addEventListener('dib-nuvem-baixou', () => {
   renderizarAtual();
 });
 // avisos de pedidos de amizade (a cada 2 minutos, só logado)
-const checarPedidos = () => Nuvem.logado() && social.atualizarAvisos().then(() => atualizarBadges()).catch(() => {});
+const checarPedidos = () => Nuvem.logado() && social.atualizarAvisos().then(() => atualizarBadges()).then(() => social.resgatarRecompensas()).catch(() => {});
 setTimeout(checarPedidos, 2500);
 setInterval(checarPedidos, 120000);
 // modo admin (decidido pelo servidor): ao abrir, ao entrar na conta e a cada hora
@@ -342,7 +342,7 @@ function talvezMostrarNovidadesV6() {
       <p><b>⚖️ Regras justas:</b> como agora existe ranking com outras pessoas, cada ação tem um XP máximo e cada tipo de atividade tem um limite por dia. Passou do limite, continua valendo para a rotina, o pet e os desafios — só não rende mais XP.</p>
       <p><b>☀️ Resumo de ontem:</b> na primeira abertura do dia, veja como foi o dia anterior e o que fazer hoje.</p>
       <p><b>🎁 Convide e ganhe:</b> quem entra pelo seu convite e cria conta vira seu amigo na hora — e os dois ganham DNA e moedas.</p>
-      <p><b>🔔 Lembretes:</b> ative em Social → Conta e o app te avisa quando a sequência estiver em risco ou o pet com fome (app instalado na tela de início).</p>
+      <p><b>📲 Convite que instala:</b> quem abre o seu link no navegador agora vê o passo a passo para instalar o app — e o campo "Quem te convidou?" no cadastro garante o prêmio para vocês dois.</p>
       <button class="btn primario largo" data-fechar>Bora!</button>
     </div>`,
     aoMontar(corpo, fechar) {

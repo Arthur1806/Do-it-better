@@ -312,6 +312,7 @@ const SECAO = {
     <h2 class="secao-titulo">Conta e nuvem</h2>
     <section class="card ajustes">
       <button class="ajuste clicavel" data-acao="ir-conta"><span>☁️ ${Nuvem.logado() ? 'Minha conta e sincronização' : 'Criar conta / entrar (salvar na nuvem)'}</span>${ICONE_SETA_DIR}</button>
+      <a class="ajuste clicavel" href="./privacidade.html"><span>🔒 Privacidade e Termos de Uso</span>${ICONE_SETA_DIR}</a>
     </section>
 
     <h2 class="secao-titulo">Backup</h2>

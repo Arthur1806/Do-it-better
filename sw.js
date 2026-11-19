@@ -14,6 +14,7 @@ const CACHE = `do-it-better-v${VERSAO}`;
 const ARQUIVOS = [
   './',
   './index.html',
+  './privacidade.html',
   './manifest.json',
   './css/style.css',
   './css/jogo.css',
@@ -98,6 +99,11 @@ self.addEventListener('fetch', (e) => {
 
   // Abrir o app (navegação) sempre devolve o index.html do cache
   if (req.mode === 'navigate') {
+    // páginas próprias (ex.: privacidade.html) abrem normalmente; o resto abre o app
+    if (url.pathname.endsWith('/privacidade.html')) {
+      e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));
+      return;
+    }
     e.respondWith(
       caches.match('./index.html').then((r) => r || fetch(req).catch(() => caches.match('./')))
     );

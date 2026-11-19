@@ -103,11 +103,11 @@ function guardarTokens(t) {
 // -------------------------------------------------------------
 
 /** Cria a conta (sem e-mail de confirmação). Devolve o código de recuperação. */
-export async function cadastrar(email, senha, nick) {
-  const r = await pedir('/functions/v1/conta', { corpo: { acao: 'cadastrar', email, senha, nick } });
+export async function cadastrar(email, senha, nick, convite = '') {
+  const r = await pedir('/functions/v1/conta', { corpo: { acao: 'cadastrar', email, senha, nick, convite } });
   if (!r || !r.ok) throw new ErroNuvem((r && r.erro) || 'Não foi possível criar a conta.');
   await entrar(email, senha);
-  return r.codigo;
+  return { codigo: r.codigo, indicado: !!r.indicado };
 }
 
 export async function entrar(email, senha) {

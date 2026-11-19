@@ -19,6 +19,7 @@ import { avatarHTML, personagem as petDoCatalogo } from './personagens.js';
 import { LIGAS } from './missoes.js';
 import { MUTACOES } from './mutacao.js';
 import { abrirSheet, confirmar, toast, vibrar, confete, vazioHTML } from './ui.js';
+import { barras } from './graficos.js';
 
 const SECOES = [
   ['ranking', '🏆 Ranking'],
@@ -184,6 +185,9 @@ export function montar(el) {
       case 'excluir':
         excluirConta();
         break;
+      case 'fundador':
+        abrirPainelFundador();
+        break;
     }
   });
   el.addEventListener('keydown', (e) => {
@@ -239,7 +243,7 @@ function boasVindasHTML() {
       <p>Crie sua conta para <b>salvar o progresso na nuvem</b> (troque de celular sem perder nada), entrar no <b>ranking geral</b> da semana, adicionar <b>amigos</b> e criar <b>grupos</b> com ranking próprio.</p>
       <button class="btn primario largo" data-acao="criar-conta">Criar conta grátis</button>
       <button class="btn secundario largo" data-acao="entrar">Já tenho conta</button>
-      <p class="dica">Não enviamos e-mails. Seu e-mail serve para você entrar e para seus amigos te acharem. Seus dados pessoais (pendências, notas, gastos) nunca aparecem para ninguém.</p>
+      <p class="dica">Não enviamos e-mails. Seu e-mail serve para você entrar e para seus amigos te acharem. Seus dados pessoais (pendências, notas, gastos) nunca aparecem para ninguém. <a href="./privacidade.html">Privacidade e Termos</a></p>
     </section>`;
 }
 
@@ -284,6 +288,7 @@ function renderAmigos(box, { forcar }) {
         <button class="btn primario" data-acao="buscar">Buscar</button>
       </div>
       <div class="busca-resultado"></div>
+      <p class="dica premio-convite">🎁 Cada amigo que criar conta pelo seu convite: <b>🪙300 + 🧬5</b> para você e para ele.</p>
       <div class="botoes-convite">
         <button class="btn btn-whats largo" data-acao="whatsapp">💬 Convidar pelo WhatsApp</button>
         <button class="btn secundario" data-acao="colar-convite">📋 Colar convite</button>
@@ -363,7 +368,7 @@ async function textoConvite() {
   const p = await carregarPerfil().catch(() => null);
   const nick = p ? p.nick : '';
   const link = `${LINK_APP()}?amigo=${encodeURIComponent(nick)}`;
-  return { nick, link, texto: `Bora evoluir junto no Do It Better? 🔥 Rotina vira jogo, tem pet, ranking e grupo. Me adiciona: @${nick}\n${link}` };
+  return { nick, link, texto: `Bora evoluir junto no Do It Better? 🔥 Rotina vira jogo, com pet, ranking e grupos. Entra pelo meu convite que a gente ganha 🪙300 + 🧬5 cada: @${nick}\n${link}` };
 }
 async function convidarWhatsApp() {
   const { texto } = await textoConvite();
@@ -562,8 +567,10 @@ function renderConta(box, { forcar }) {
         <div><b class="conta-nick">@…</b><small>${esc(u.email || '')}</small></div></div>
       <div class="conta-codigo"><span>Seu código de amigo</span><b class="codigo-amigo">…</b></div>
       <div class="status-nuvem"></div>
+      <p class="dica indicados-linha"></p>
       <button class="btn secundario largo" data-acao="sincronizar">☁️ Sincronizar agora</button>
     </section>
+    ${d.meta.admin ? `<section class="card lista"><button class="item-linha" data-acao="fundador"><span class="item-info"><span class="item-nome">📊 Painel do fundador</span><span class="item-sub">Contas, usuários ativos, retenção e crescimento</span></span><span class="seta">›</span></button></section>` : ''}
     <section class="card lista">
       <label class="item-linha"><span class="item-info"><span class="item-nome">Aparecer no ranking geral</span><span class="item-sub">Seus amigos e grupos sempre veem você</span></span>
         <input type="checkbox" class="interruptor" name="noRanking" ${d.ajustes.noRanking !== false ? 'checked' : ''}></label>
@@ -573,6 +580,10 @@ function renderConta(box, { forcar }) {
       <button class="item-linha perigo" data-acao="excluir"><span class="item-info"><span class="item-nome">Excluir conta</span><span class="item-sub">Apaga tudo da nuvem (o aparelho mantém os dados)</span></span><span class="seta">›</span></button>
     </section>`;
   desenharStatusNuvem(box);
+  Nuvem.rpc('meus_indicados').then((n) => {
+    const el = box.querySelector('.indicados-linha');
+    if (el) el.innerHTML = n ? `🎁 Você já trouxe <b>${n}</b> amigo${n > 1 ? 's' : ''} para o jogo!` : '🎁 Convide amigos: cada um que entrar pelo seu convite rende 🪙300 + 🧬5 para os dois.';
+  }).catch(() => {});
   carregarPerfil({ forcar }).then((p) => {
     if (!p) return;
     box.querySelector('.conta-nick').textContent = '@' + p.nick;
@@ -662,11 +673,15 @@ export function abrirCadastro() {
     html: `<label class="campo"><span>Seu nick (é assim que te acham)</span><div class="entrada-prefixo"><span>@</span><input class="entrada" name="nick" maxlength="20" placeholder="arthur" autocapitalize="off" spellcheck="false" autocomplete="username"></div></label>
       <label class="campo"><span>E-mail</span><input class="entrada" type="email" name="email" maxlength="120" placeholder="voce@email.com" autocapitalize="off" autocomplete="email"></label>
       ${campoSenha('senha', 'Senha', 'new-password')}
+      <label class="campo"><span>Quem te convidou? <small class="apagado">(opcional — vocês dois ganham 🪙300 + 🧬5)</small></span><div class="entrada-prefixo"><span>@</span><input class="entrada" name="convite" maxlength="20" placeholder="nick do amigo" autocapitalize="off" spellcheck="false" value="${esc(conviteGuardado())}"></div></label>
       <p class="dica">Não mandamos e-mail de confirmação. Depois de criar, você recebe um <b>código de recuperação</b> — guarde (tire um print) para trocar a senha se esquecer.</p>
-      <button class="btn primario largo" data-ok>Criar conta</button>`,
+      <button class="btn primario largo" data-ok>Criar conta</button>
+      <p class="dica centro pequena">Ao criar a conta você concorda com a <a href="./privacidade.html">Privacidade e os Termos de Uso</a>.</p>`,
     aoMontar(corpo, fechar) {
       const nick = corpo.querySelector('[name="nick"]');
       nick.addEventListener('input', () => (nick.value = nick.value.toLowerCase().replace(/[^a-z0-9_.]/g, '')));
+      const conv = corpo.querySelector('[name="convite"]');
+      conv.addEventListener('input', () => (conv.value = conv.value.toLowerCase().replace(/[^a-z0-9_.]/g, '')));
       const ok = corpo.querySelector('[data-ok]');
       ok.addEventListener('click', async () => {
         const v = (n) => corpo.querySelector(`[name="${n}"]`).value.trim();
@@ -676,10 +691,16 @@ export function abrirCadastro() {
         ok.disabled = true;
         ok.textContent = 'Criando…';
         try {
-          const codigo = await Nuvem.cadastrar(v('email'), corpo.querySelector('[name="senha"]').value, v('nick'));
+          const conv = v('convite').toLowerCase().replace(/^@/, '');
+          const r = await Nuvem.cadastrar(v('email'), corpo.querySelector('[name="senha"]').value, v('nick'), conv);
+          if (r.indicado) {
+            try {
+              sessionStorage.removeItem('dib-convite');
+            } catch (_) {}
+          }
           fechar();
           await depoisDeEntrar();
-          mostrarCodigo(codigo, { boasVindas: true });
+          mostrarCodigo(r.codigo, { boasVindas: true });
           confete();
         } catch (e) {
           toast(e.message, { tipo: 'erro', duracao: 5000 });
@@ -794,6 +815,82 @@ async function depoisDeEntrar() {
   if (elTela) render(elTela, { forcar: true });
   document.dispatchEvent(new CustomEvent('dib-redesenhar-badges'));
   continuarConvite();
+  setTimeout(resgatarRecompensas, 1500);
+}
+
+/** Convite guardado (link ?amigo= ou colado) para preencher o cadastro. */
+function conviteGuardado() {
+  try {
+    return sessionStorage.getItem('dib-convite') || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+/** Prêmios entregues pelo servidor (indicações...). Cada um é resgatado uma única vez. */
+export async function resgatarRecompensas() {
+  if (!Nuvem.logado() || !Sync.vinculado()) return;
+  let lista = [];
+  try {
+    lista = await Nuvem.rpc('resgatar_recompensas');
+  } catch (_) {
+    return;
+  }
+  if (!Array.isArray(lista) || !lista.length) return;
+  const moedas = lista.reduce((s, r) => s + (r.moedas || 0), 0);
+  const dna = lista.reduce((s, r) => s + (r.dna || 0), 0);
+  alterar((d) => {
+    d.carteira.moedas += moedas;
+    d.carteira.dna = (d.carteira.dna || 0) + dna;
+    if (lista.some((r) => r.tipo === 'indicacao')) d.meta.temAmigo = true;
+  });
+  cache.amigos = null;
+  confete({ quantidade: 90 });
+  abrirSheet({
+    titulo: 'Presente chegando! 🎁',
+    html: `<div class="codigo-recuperacao">
+        ${lista.map((r) => `<p>${esc(r.texto)}</p>`).join('')}
+        <b class="codigo-grande">+🪙${formatarNumero(moedas)}${dna ? ` · +🧬${dna}` : ''}</b>
+        <p class="dica">Convide mais amigos pelo WhatsApp: cada um que entrar pelo seu convite rende o mesmo prêmio para vocês dois.</p>
+        <button class="btn primario largo" data-ok>Valeu!</button>
+      </div>`,
+    aoMontar(corpo, fechar) {
+      corpo.querySelector('[data-ok]').addEventListener('click', fechar);
+    },
+  });
+}
+
+// -------------------------------------------------------------
+// Painel do fundador (só admin; o servidor confere)
+// -------------------------------------------------------------
+
+async function abrirPainelFundador() {
+  const { corpo } = abrirSheet({ titulo: '📊 Painel do fundador', classe: 'sheet-alta', html: carregandoHTML('Calculando métricas…') });
+  try {
+    const m = await Nuvem.rpc('metricas_admin');
+    const pct = (v) => (v === null || v === undefined ? '—' : `${v}%`);
+    const card = (valor, rotulo, dica = '') => `<div class="kpi"><b>${valor}</b><small>${rotulo}</small>${dica ? `<i>${dica}</i>` : ''}</div>`;
+    const grudar = m.mau ? Math.round((100 * m.dau) / m.mau) : 0;
+    const serie = (lista) => barras(lista.map((x) => ({ valor: x.n, rotulo: String(x.dia).slice(8, 10) })), { altura: 120, rotulosACada: 2 });
+    corpo.innerHTML = `<div class="fundador">
+      <h3 class="secao-titulo">Base</h3>
+      <div class="kpis">${card(formatarNumero(m.contas), 'contas')}${card(m.novas_hoje, 'novas hoje')}${card(m.novas_7d, 'novas em 7 dias')}${card(m.novas_30d, 'novas em 30 dias')}</div>
+      <h3 class="secao-titulo">Uso</h3>
+      <div class="kpis">${card(m.dau, 'ativos hoje (DAU)')}${card(m.wau, 'ativos 7d (WAU)')}${card(m.mau, 'ativos 30d (MAU)')}${card(`${grudar}%`, 'DAU/MAU', 'quanto o app gruda')}</div>
+      <h3 class="secao-titulo">Retenção</h3>
+      <div class="kpis">${card(pct(m.ret_d1), 'D1', 'voltou no dia seguinte')}${card(pct(m.ret_d7), 'D7', 'voltou ~1 semana depois')}${card(pct(m.ret_d30), 'D30', 'voltou ~1 mês depois')}${card(m.no_ranking_semana, 'no ranking da semana')}</div>
+      <h3 class="secao-titulo">Ativos por dia (14 dias)</h3>
+      <div class="card grafico-fundador">${serie(m.serie_dau)}</div>
+      <h3 class="secao-titulo">Contas novas por dia (14 dias)</h3>
+      <div class="card grafico-fundador">${serie(m.serie_novas)}</div>
+      <h3 class="secao-titulo">Social e crescimento</h3>
+      <div class="kpis">${card(m.amizades, 'amizades')}${card(m.grupos, 'grupos')}${card(m.indicados, 'vieram por convite')}${card(m.nivel_medio || 0, 'nível médio')}</div>
+      ${m.top_indicadores.length ? `<div class="lista card">${m.top_indicadores.map((t, i) => `<div class="item-linha"><span class="item-info"><span class="item-nome">${i + 1}. @${esc(t.nick)}</span></span><b>${t.n} convite${t.n > 1 ? 's' : ''}</b></div>`).join('')}</div>` : ''}
+      <p class="dica">Conta só quem tem conta (quem usa sem conta não aparece). "Ativo" = abriu o app logado e sincronizou no dia. Metas boas para app de hábito: D1 acima de 40%, D7 acima de 20%, DAU/MAU acima de 20%.</p>
+    </div>`;
+  } catch (e) {
+    corpo.innerHTML = erroHTML(e);
+  }
 }
 
 /** Se a pessoa entrou mas o app fechou antes da escolha do progresso, retoma. */

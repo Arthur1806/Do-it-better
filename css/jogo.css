@@ -1694,3 +1694,13 @@ body.com-onb .topo-compacto {
 .resumo-numeros b { font-size: 20px; }
 .resumo-numeros small { color: var(--texto-2); font-size: 12px; }
 .resumo-frase { font-size: 16px; line-height: 1.4; }
+
+/* ---------- v6: painel do fundador e convite premiado ---------- */
+.fundador { display: flex; flex-direction: column; gap: 10px; }
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: var(--card-forte); border: 1px solid var(--borda); }
+.kpi b { font-size: 24px; font-weight: 800; }
+.kpi small { font-size: 13px; color: var(--texto-2); }
+.kpi i { font-style: normal; font-size: 11px; color: var(--texto-3); }
+.grafico-fundador { padding: 10px; }
+.premio-convite { margin: 0; padding: 8px 10px; border-radius: 10px; background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.35); }
