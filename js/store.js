@@ -16,7 +16,7 @@ import { hojeKey } from './utils.js';
 import { AVATAR_PADRAO } from './visual-padrao.js';
 
 /** Versão atual do formato dos dados. Aumente ao criar uma migração. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /** Chave usada no localStorage. */
 const CHAVE = 'doitbetter:dados';
@@ -38,6 +38,9 @@ export function estadoPadrao() {
       exemplosCriados: false,
       onboardingFeito: false, // questionário de primeira entrada
       avatarCriado: false, // já montou o personagem?
+      jornadaFeita: false, // tutorial em missões (v6)
+      jornada: { passo: 0 },
+      resumoVisto: null, // dia em que o resumo de ontem já foi mostrado
     },
     // Personagem do jogador (boneco em pixel art)
     avatar: { ...AVATAR_PADRAO },
@@ -127,6 +130,7 @@ export function estadoPadrao() {
       comboMax: 0,
       desafiosSemanais: 0, // desafios semanais resgatados
       semanasCompletas: 0, // semanas com todos os desafios resgatados
+      alimentou: 0, // vezes que deu comida/água ao pet (jornada inicial)
     },
     // Painel (tela Hoje): ordem, visibilidade e tamanho dos blocos
     painel: [], // { id, tipo, ref?, ativo, tamanho: 'p' | 'g' }
@@ -266,6 +270,20 @@ const MIGRACOES = {
     xp.fisicoPiso = [20, 10, 6, 3, 1].findIndex((n) => velho >= n) >= 0 ? 5 - [20, 10, 6, 3, 1].findIndex((n) => velho >= n) : 1;
     d.meta = d.meta || {};
     d.meta.novidadeV5 = true;
+    return d;
+  },
+
+  // 6: lançamento público — regras justas de XP (valores acima do teto são ajustados)
+  //    e a jornada inicial (quem já joga começa com ela concluída).
+  6: (d) => {
+    const teto = { rotinaPadrao: 30, rotinaBonus: 60, pendAlta: 40, pendMedia: 40, pendBaixa: 40, treino: 150, treinoRecorde: 75, agua: 20 };
+    const x = (d.ajustes && d.ajustes.xp) || {};
+    for (const [k, v] of Object.entries(teto)) if (typeof x[k] === 'number' && x[k] > v) x[k] = v;
+    for (const i of d.rotina || []) if (typeof i.xp === 'number' && i.xp > 30) i.xp = 30;
+    for (const c of d.checks || []) if (typeof c.xp === 'number' && c.xp > 40) c.xp = 40;
+    d.meta = d.meta || {};
+    if (d.meta.onboardingFeito) d.meta.jornadaFeita = true;
+    d.meta.novidadeV6 = !!d.meta.onboardingFeito;
     return d;
   },
 };

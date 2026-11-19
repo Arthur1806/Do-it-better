@@ -295,6 +295,7 @@ function renderAmigos(box, { forcar }) {
   carregarAmigos({ forcar }).then((r) => {
     if (!r) return;
     document.dispatchEvent(new CustomEvent('dib-redesenhar-badges'));
+    if (r.some((a) => a.relacao === 'amigo') && !dados().meta.temAmigo) alterar((d) => (d.meta.temAmigo = true), { silencioso: true });
     const recebidos = r.filter((a) => a.relacao === 'recebido');
     const enviados = r.filter((a) => a.relacao === 'enviado');
     const amigos = r.filter((a) => a.relacao === 'amigo');
@@ -335,6 +336,7 @@ async function pedirAmizade(id, botao) {
     const r = await Nuvem.rpc('pedir_amizade', { p_alvo: id });
     if (!r.ok) return toast(r.erro, { tipo: 'erro' });
     toast(r.status === 'aceita' ? 'Vocês agora são amigos! 🎉' : 'Pedido de amizade enviado ✉️');
+    if (r.status === 'aceita') alterar((d) => (d.meta.temAmigo = true), { silencioso: true });
     if (r.status === 'aceita') confete({ quantidade: 60 });
     cache.amigos = null;
     cache.rankingAmigos = null;
@@ -348,6 +350,7 @@ async function responder(id, aceitar) {
   try {
     await Nuvem.rpc('responder_amizade', { p_de: id, p_aceitar: aceitar });
     toast(aceitar ? 'Amizade aceita! 🎉' : 'Pedido recusado');
+    if (aceitar) alterar((d) => (d.meta.temAmigo = true), { silencioso: true });
     cache.amigos = null;
     cache.rankingAmigos = null;
     render(elTela, { refazer: true });

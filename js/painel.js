@@ -14,7 +14,7 @@ import {
   horaAtual, diasDaSemana, diaSemana, lerNumero, plural, MESES, formatarNumero,
 } from './utils.js';
 import { registroDia, lerDia, valeNoDia, resumoRotina, sequenciaRotina, multiplicador, checkFeito, sequenciaCheck, atualizarMelhoresSequencias, itensRotinaDoDia, fatorHorario, xpComHorario, textoHorario } from './historico.js';
-import { ganharXP, removerXP, nivelInfo, xpDoDia } from './xp.js';
+import { ganharXP, removerXP, nivelInfo, xpDoDia, LIMITES_XP } from './xp.js';
 import { alternarItem } from './rotina.js';
 import { contagens, listar, concluir, reabrir, xpDaPrioridade, passouDoPrazo } from './pendencias.js';
 import { proximaFicha, treinosNaSemana, iniciarTreino, abrirTreinoAtivo } from './treinos.js';
@@ -30,6 +30,7 @@ import { BLOCOS_FIXOS } from './seed.js';
 import { companheiro, avatarHTML, humor, fala, estagioDoNivel } from './personagens.js';
 import { missoesDoDia, resgatarMissao, bauDisponivel, abrirBau, ligaAtual, LIGAS } from './missoes.js';
 import { desafiosDaSemana, resgatarDesafio, diasParaRenovar } from './desafios.js';
+import { jornadaHTML, resgatarPasso, estadoJornada, textoPremio } from './jornada.js';
 import { pocaoAtiva, bonusPocao, podePrestigio } from './xp.js';
 import { cenaHTML, barrasPetHTML } from './telas-personagem.js';
 import { fisicoAtual } from './visual.js';
@@ -161,7 +162,7 @@ export function abrirFormCheck(c = null) {
         const v = {
           nome,
           emoji: form.elements.emoji.value.trim() || '✅',
-          xp: Math.max(0, Math.round(lerNumero(form.elements.xp.value, 20))),
+          xp: Math.min(LIMITES_XP.check.porAcao, Math.max(0, Math.round(lerNumero(form.elements.xp.value, 20)))),
           dias: lerDias(corpo),
           horaLimite: form.elements.horaLimite.value || null,
         };
@@ -523,6 +524,28 @@ export function montar(el) {
       case 'resgatar-semanal':
         if (!editando) resgatarSemanal(item);
         break;
+      case 'jornada-resgatar': {
+        let r;
+        alterar(() => (r = resgatarPasso()));
+        if (!r) break;
+        tocar('moeda');
+        vibrar([15, 30, 15]);
+        if (r.fim) {
+          confete();
+          celebrar({ emoji: '🧭', titulo: 'Jornada inicial completa!', subtitulo: `Você aprendeu o jogo todo. Prêmio final: ${textoPremio(r.premio)}. Agora é com você: mantenha a sequência 🔥 e suba no ranking!` });
+        } else toast(`${r.passo.emoji} ${r.passo.titulo} — ${textoPremio(r.premio)}`);
+        break;
+      }
+      case 'jornada-ir': {
+        const e = estadoJornada();
+        if (!e.ativa) break;
+        if (e.passo.ir.aba === 'hoje') {
+          const alvo = el.querySelector(e.passo.id === 'bau' ? '.banner-bau' : e.passo.id === 'desafio' ? '.secao-missoes' : '.plano, .card-plano, [data-plano]') || el.querySelector('.secao-missoes');
+          if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          toast(e.passo.dica, { duracao: 4500 });
+        } else irPara(e.passo.ir.aba, e.passo.ir.secao ? { secao: e.passo.ir.secao } : {});
+        break;
+      }
       case 'aba-desafios':
         abaDesafios = item === 'semana' ? 'semana' : 'dia';
         render(el);
@@ -720,6 +743,8 @@ export function render(el, params = {}) {
         <div class="pontos-dia"><strong>${xpHoje}</strong><small>XP hoje</small></div>
       </div>
     </section>
+
+    ${!editando ? jornadaHTML() : ''}
 
     ${!editando && bauDisponivel() ? `<button class="banner banner-bau" data-acao="bau">
         <span class="banner-emoji balanca">🎁</span>

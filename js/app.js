@@ -33,6 +33,8 @@ import * as social from './social.js';
 import { iniciarSync } from './sync.js';
 import * as Nuvem from './nuvem.js';
 import { verificarAdmin, manterMaximo } from './admin.js';
+import { deveSugerirInstalar, mostrarTelaInstalar } from './instalar.js';
+import { deveMostrarResumo, resumoDeOntemHTML } from './jornada.js';
 import { abrirNotas } from './extras.js';
 import { contagens } from './pendencias.js';
 
@@ -74,6 +76,16 @@ on('xp', (l) => {
   } else {
     tocar('check');
   }
+});
+const avisosLimite = new Set();
+on('xp-limite', (x) => {
+  if (!pronto) return;
+  const chave = `${hojeKey()}:${x.fonte}:${x.base > 0 ? 'acao' : 'dia'}`;
+  if (avisosLimite.has(chave)) return;
+  avisosLimite.add(chave);
+  toast(x.base > 0
+    ? `⚖️ Cada ação de ${x.nome} rende no máximo ${x.porAcao} XP (regra justa do ranking).`
+    : `⚖️ Limite diário de XP de ${x.nome} atingido (${x.porDia}). Continua valendo para a rotina, o pet e os desafios!`, { duracao: 4500 });
 });
 on('xp-removido', (l) => {
   if (l.xp > 0) flutuarXP(l.xp, { negativo: true });
@@ -155,6 +167,11 @@ registrarAba('pet', petaba);
 registrarAba('social', social);
 registrarAba('perfil', perfil);
 iniciarSync(); // nuvem: só faz algo se a pessoa tiver entrado na conta
+// quem chega pelo navegador do celular: primeiro, instalar o app
+if (deveSugerirInstalar()) {
+  const conviteURL = (new URLSearchParams(location.search).get('amigo') || '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
+  setTimeout(() => mostrarTelaInstalar({ convite: conviteURL }), 300);
+}
 document.addEventListener('dib-ir', (e) => irPara(e.detail.aba, e.detail));
 window.addEventListener('dib-nuvem-baixou', () => {
   // o progresso veio de outro aparelho: redesenha tudo
@@ -280,8 +297,9 @@ function talvezMostrarNovidadesV5() {
 
 /** Quem já usava o app vê uma vez o que mudou na versão 4. */
 function talvezMostrarNovidades() {
-  if (talvezMostrarNovidadesV5()) return;
-  if (!d.meta.novidadeV4 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return;
+  if (talvezMostrarNovidadesV6()) return true;
+  if (talvezMostrarNovidadesV5()) return true;
+  if (!d.meta.novidadeV4 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return false;
   setTimeout(() => abrirSheet({
     titulo: 'Novidades ✨',
     html: `<div class="novidades">
@@ -297,6 +315,45 @@ function talvezMostrarNovidades() {
   }), 900);
   d.meta.novidadeV4 = false;
   Store.salvar({ silencioso: true });
+  return true;
+}
+
+/** Resumo de ontem: 1x por dia, na primeira abertura. */
+function talvezMostrarResumo(espera = 1100) {
+  if (!deveMostrarResumo(d) || document.querySelector('.sheet-raiz, .celebracao-raiz, .instalar-raiz')) return false;
+  d.meta.resumoVisto = hojeKey();
+  Store.salvar({ silencioso: true });
+  setTimeout(() => abrirSheet({
+    titulo: 'Resumo de ontem',
+    html: resumoDeOntemHTML(),
+    aoMontar(corpo, fechar) {
+      corpo.querySelector('[data-fechar-resumo]').addEventListener('click', fechar);
+    },
+  }), espera);
+  return true;
+}
+
+/** Quem já usava o app vê uma vez o que mudou na versão 6. */
+function talvezMostrarNovidadesV6() {
+  if (!d.meta.novidadeV6 || !d.meta.onboardingFeito || !d.meta.avatarCriado) return false;
+  setTimeout(() => abrirSheet({
+    titulo: 'Versão 6: pronto pro mundo 🚀',
+    html: `<div class="novidades">
+      <p><b>⚖️ Regras justas:</b> como agora existe ranking com outras pessoas, cada ação tem um XP máximo e cada tipo de atividade tem um limite por dia. Passou do limite, continua valendo para a rotina, o pet e os desafios — só não rende mais XP.</p>
+      <p><b>☀️ Resumo de ontem:</b> na primeira abertura do dia, veja como foi o dia anterior e o que fazer hoje.</p>
+      <p><b>🎁 Convide e ganhe:</b> quem entra pelo seu convite e cria conta vira seu amigo na hora — e os dois ganham DNA e moedas.</p>
+      <p><b>🔔 Lembretes:</b> ative em Social → Conta e o app te avisa quando a sequência estiver em risco ou o pet com fome (app instalado na tela de início).</p>
+      <button class="btn primario largo" data-fechar>Bora!</button>
+    </div>`,
+    aoMontar(corpo, fechar) {
+      corpo.querySelector('[data-fechar]').addEventListener('click', fechar);
+    },
+  }), 900);
+  d.meta.novidadeV6 = false;
+  d.meta.novidadeV5 = false;
+  d.meta.novidadeV4 = false;
+  Store.salvar({ silencioso: true });
+  return true;
 }
 
 /** Quem já usava o app (ou pulou o questionário) cria o personagem uma vez. */
@@ -317,7 +374,7 @@ function iniciar() {
     Store.salvar({ silencioso: true });
   }
   talvezCriarPersonagem();
-  if (!social.tratarConviteDoLink()) talvezMostrarNovidades();
+  if (!social.tratarConviteDoLink() && !talvezMostrarNovidades()) talvezMostrarResumo();
   setTimeout(() => social.talvezVincular(), 1200);
   talvezAvisarPerdaMutacao();
 }
@@ -327,6 +384,8 @@ if (!d.meta.onboardingFeito) {
   document.addEventListener('dib-onboarding-fim', () => {
     d.meta.novidadeV4 = false;
     d.meta.novidadeV5 = false;
+    d.meta.novidadeV6 = false;
+    d.meta.resumoVisto = hojeKey();
     pronto = true;
     irPara('hoje');
     atualizarBadges();
@@ -385,7 +444,7 @@ function verificarDia() {
   diaAtual = hojeKey();
   fecharDias();
   Store.salvar(); // redesenha tudo
-  toast('Novo dia! Os checks diários foram reiniciados ☀️');
+  if (!talvezMostrarResumo(300)) toast('Novo dia! Os checks diários foram reiniciados ☀️');
 }
 setInterval(verificarDia, 60000);
 document.addEventListener('visibilitychange', () => {

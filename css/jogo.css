@@ -1647,3 +1647,50 @@ body.com-onb .topo-compacto {
 .tabbar button span:not(.tab-pet):not(.tab-avatar) { font-size: 10px; }
 .subnav-social { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .subnav-social button { padding: 0 4px; font-size: 13px; min-width: 0; }
+
+/* =============================================================
+   v6 — Tela de instalação (quem chega pelo navegador do celular)
+   ============================================================= */
+.instalar-raiz {
+  position: fixed; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center;
+  padding: calc(20px + var(--safe-top, 0px)) 18px calc(20px + var(--safe-bottom, 0px));
+  background: radial-gradient(120% 70% at 50% 0%, rgba(var(--roxo-rgb), 0.45), transparent 60%), var(--fundo, #0b0a14);
+  opacity: 0; transition: opacity 0.25s; overflow-y: auto;
+}
+.instalar-raiz.aberta { opacity: 1; }
+.instalar { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.instalar-icone { width: 84px; height: 84px; border-radius: 22px; box-shadow: 0 10px 30px rgba(var(--roxo-rgb), 0.5); }
+.instalar h1 { font-size: 26px; font-weight: 800; }
+.instalar-sub { color: var(--texto-2); line-height: 1.45; }
+.instalar-convite { padding: 6px 14px; border-radius: 999px; background: var(--grad-suave); border: 1px solid rgba(var(--ciano-rgb), 0.4); }
+.instalar-passos { list-style: none; width: 100%; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 0; margin: 0; }
+.instalar-passos li { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--borda); line-height: 1.35; }
+.instalar-passos li svg { vertical-align: -5px; color: var(--ciano-claro); }
+.instalar-passos .num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; font-weight: 800; }
+.instalar [hidden] { display: none !important; }
+.instalar-raiz { align-items: flex-start; }
+.instalar { margin: auto 0; }
+
+/* ---------- v6: jornada inicial e resumo de ontem ---------- */
+.jornada { padding: 14px; display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(var(--ciano-rgb), 0.35);
+  background: radial-gradient(120% 80% at 0% 0%, rgba(var(--ciano-rgb), 0.12), transparent 60%), var(--card); }
+.jornada.pronta { border-color: rgba(250, 204, 21, 0.7); box-shadow: 0 0 18px rgba(250, 204, 21, 0.25); }
+.jornada-topo { display: flex; justify-content: space-between; align-items: center; }
+.jornada-topo small { color: var(--texto-2); }
+.jornada-trilha { display: flex; gap: 6px; }
+.jornada-trilha i { flex: 1; height: 30px; border-radius: 10px; display: grid; place-items: center; font-style: normal; font-size: 15px;
+  background: var(--card-forte); opacity: 0.45; filter: grayscale(1); }
+.jornada-trilha i.ok { opacity: 1; filter: none; background: rgba(34, 197, 94, 0.2); color: #86efac; font-weight: 800; }
+.jornada-trilha i.atual { opacity: 1; filter: none; background: var(--grad-suave); outline: 2px solid rgba(var(--ciano-rgb), 0.6); }
+.jornada-passo { display: flex; gap: 12px; align-items: center; }
+.jornada-emoji { font-size: 32px; }
+.jornada-info { display: flex; flex-direction: column; gap: 2px; }
+.jornada-info b { font-size: 16px; }
+.jornada-info small { color: var(--texto-2); line-height: 1.35; }
+.resumo-ontem { display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.resumo-ontem h3 { font-size: 22px; }
+.resumo-numeros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.resumo-numeros > div { display: flex; flex-direction: column; padding: 12px 4px; border-radius: 14px; background: var(--card-forte); }
+.resumo-numeros b { font-size: 20px; }
+.resumo-numeros small { color: var(--texto-2); font-size: 12px; }
+.resumo-frase { font-size: 16px; line-height: 1.4; }
