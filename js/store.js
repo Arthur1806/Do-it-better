@@ -98,6 +98,8 @@ export function estadoPadrao() {
         treino: 100, // por treino finalizado
         treinoRecorde: 50, // bônus se bater recorde de carga
         agua: 15, // ao bater a meta de água do dia
+        refeicao: 8, // por refeição da dieta cumprida (v5.2)
+        dietaBonus: 30, // bônus ao cumprir todas as refeições do dia
       },
       metaTreinosSemana: 4,
       metaAgua: 8, // copos por dia
@@ -135,7 +137,7 @@ export function estadoPadrao() {
     // Blocos de check personalizados (ex.: Quarto arrumado)
     checks: [], // { id, chave, nome, emoji, xp, dias, horaLimite, criadoEm, melhorSequencia, exemplo }
     // Registro de cada dia (é aqui que os checks diários "reiniciam": cada dia tem o seu)
-    diario: {}, // { 'AAAA-MM-DD': { rotina:{id:{lanc,ts}}, checks:{id:{lanc,ts}}, agua, aguaLanc, bonusRotina, resumo } }
+    diario: {}, // { 'AAAA-MM-DD': { rotina:{id:{lanc,ts}}, checks:{id:{lanc,ts}}, refeicoes:{id:{lanc,ts}}, agua, aguaLanc, bonusRotina, bonusDieta, resumo } }
     pendencias: [], // { id, titulo, descricao, prazo, prioridade, etiqueta, criadaEm, concluidaEm, concluidaDia, lanc, xpGanho }
     etiquetas: ['Trabalho', 'Pessoal', 'Casa'],
     notas: [], // { id, texto, criadaEm, editadaEm }
@@ -146,6 +148,12 @@ export function estadoPadrao() {
       sessoes: [], // histórico de treinos finalizados
       ultimaFichaId: null, // para o rodízio A -> B -> C -> A
       emAndamento: null, // treino em andamento (sobrevive se o app fechar)
+    },
+    // Dieta (v5.2): plano alimentar. As marcações de cada dia ficam em diario[dia].refeicoes
+    dieta: {
+      refeicoes: [], // { id, nome, emoji, horario, itens: [{ id, qtd, nome }], kcal, proteina, obs, dias, criadoEm }
+      metaKcal: 0, // 0 = usa a soma das refeições
+      metaProteina: 0,
     },
   };
 }

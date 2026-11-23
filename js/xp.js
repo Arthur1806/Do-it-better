@@ -128,7 +128,7 @@ export function bonusPrestigio() {
  * Dá XP ao jogador.
  * @param {object} p
  * @param {number} p.base       XP antes do multiplicador
- * @param {string} p.fonte      'rotina' | 'bonus-rotina' | 'check' | 'pendencia' | 'treino' | 'recorde' | 'agua'
+ * @param {string} p.fonte      'rotina' | 'bonus-rotina' | 'check' | 'pendencia' | 'treino' | 'recorde' | 'agua' | 'refeicao' | 'bonus-dieta'
  * @param {string} [p.ref]      ID do item que gerou o XP
  * @param {string} [p.rotulo]   texto para o histórico
  * @param {boolean} [p.multiplicar=true]

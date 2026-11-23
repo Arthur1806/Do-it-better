@@ -149,7 +149,7 @@ function aplicar(efeito) {
 // O que a sua rotina faz com o pet
 // -------------------------------------------------------------
 
-const GANHO = { rotina: { forca: 4, alegria: 2 }, check: { forca: 3, alegria: 2 }, pendencia: { forca: 3 }, treino: { forca: 12, alegria: 5 }, 'bonus-rotina': { forca: 6, limpeza: 8, alegria: 8 }, agua: { forca: 3 } };
+const GANHO = { rotina: { forca: 4, alegria: 2 }, check: { forca: 3, alegria: 2 }, pendencia: { forca: 3 }, treino: { forca: 12, alegria: 5 }, 'bonus-rotina': { forca: 6, limpeza: 8, alegria: 8 }, agua: { forca: 3 }, refeicao: { forca: 2, alegria: 1 }, 'bonus-dieta': { forca: 5, alegria: 5 } };
 
 /** Atividade cumprida -> pet mais forte. */
 export function aoGanharXP(lanc) {

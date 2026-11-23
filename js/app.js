@@ -27,6 +27,8 @@ import * as rotina from './rotina.js';
 import * as pendencias from './pendencias.js';
 import * as tarefas from './tarefas.js';
 import * as treinos from './treinos.js';
+import * as abaTreinos from './aba-treinos.js';
+import * as dieta from './dieta.js';
 import * as petaba from './petaba.js';
 import * as perfil from './perfil.js';
 import * as social from './social.js';
@@ -64,7 +66,7 @@ on('xp', (l) => {
   if (!pronto) return;
   // COMBO: concluir coisas em sequência rápida (até 45 s entre uma e outra)
   const agora = Date.now();
-  combo = agora - ultimoXP < 45000 && ['rotina', 'check', 'pendencia', 'agua'].includes(l.fonte) ? combo + 1 : 1;
+  combo = agora - ultimoXP < 45000 && ['rotina', 'check', 'pendencia', 'agua', 'refeicao'].includes(l.fonte) ? combo + 1 : 1;
   ultimoXP = agora;
   if (combo >= 2) {
     mostrarCombo(combo);
@@ -149,7 +151,7 @@ document.addEventListener('focusout', () => setTimeout(() => {
 // ---------- 3. Abas ----------
 registrarAba('hoje', painel);
 registrarAba('tarefas', tarefas);
-registrarAba('treinos', treinos);
+registrarAba('treinos', abaTreinos); // Treino | Dieta
 registrarAba('pet', petaba);
 registrarAba('social', social);
 registrarAba('perfil', perfil);
@@ -211,7 +213,9 @@ function atualizarBadges() {
   const faltam = Math.max(0, r.total - r.feitos) + pend;
   marcar('hoje', bauDisponivel() || missoesParaResgatar() > 0 || desafiosParaResgatar() > 0 ? true : '');
   marcar('tarefas', faltam ? String(faltam) : '', c.atrasadas > 0);
-  marcar('treinos', d.treinos.emAndamento ? true : '');
+  // ponto na aba Treinos: treino em andamento ou hora de uma refeição
+  const refeicao = dieta.refeicaoAgora();
+  marcar('treinos', d.treinos.emAndamento || refeicao ? true : '', !!refeicao && !d.treinos.emAndamento);
   marcar('pet', petPrecisa || novosNaColecao() + d.visualNovos.length > 0 ? true : '', !!petPrecisa);
   marcar('social', social.pedidosRecebidos() ? String(social.pedidosRecebidos()) : '');
   marcar('perfil', '');
@@ -339,6 +343,11 @@ document.getElementById('fab').addEventListener('click', () => {
     else rotina.abrirFormItem();
     return;
   }
+  // na Dieta o "+" cria uma refeição
+  if (abaAtual() === 'treinos' && abaTreinos.subAtual() === 'dieta') {
+    dieta.abrirFormRefeicao();
+    return;
+  }
   abrirSheet({
     titulo: 'Adicionar',
     html: `<div class="acoes-rapidas">
@@ -346,6 +355,8 @@ document.getElementById('fab').addEventListener('click', () => {
       <button class="acao-rapida card" data-rapido="rotina"><span>🔁</span><b>Item de rotina</b><small>Hábito diário</small></button>
       <button class="acao-rapida card" data-rapido="nota"><span>🗒️</span><b>Nota</b><small>Ideia rápida</small></button>
       <button class="acao-rapida card" data-rapido="check"><span>🎯</span><b>Desafio diário</b><small>Check com sequência 🔥</small></button>
+      <button class="acao-rapida card" data-rapido="refeicao"><span>🥗</span><b>Refeição</b><small>Para a sua dieta</small></button>
+      <button class="acao-rapida card" data-rapido="ficha"><span>🏋️</span><b>Ficha de treino</b><small>Exercícios A/B/C</small></button>
     </div>`,
     aoMontar(corpo, fechar) {
       corpo.addEventListener('click', (e) => {
@@ -358,6 +369,8 @@ document.getElementById('fab').addEventListener('click', () => {
           if (tipo === 'rotina') rotina.abrirFormItem();
           if (tipo === 'nota') abrirNotas({ nova: true });
           if (tipo === 'check') painel.abrirFormCheck();
+          if (tipo === 'refeicao') dieta.abrirFormRefeicao();
+          if (tipo === 'ficha') treinos.abrirFormFicha();
         }, 200);
       });
     },
@@ -367,6 +380,8 @@ document.getElementById('fab').addEventListener('click', () => {
 // ---------- 5. Virada do dia (meia-noite) ----------
 let diaAtual = hojeKey();
 function verificarDia() {
+  atualizarBadges(); // o aviso de refeição muda com o relógio
+  if (abaAtual() === 'treinos' && abaTreinos.subAtual() === 'dieta') renderizarAtual(); // "em 20 min", "hora de comer"...
   // fome e sede do pet (a cada minuto ou ao voltar ao app)
   if (atualizarPet()) {
     Store.salvar({ silencioso: true });

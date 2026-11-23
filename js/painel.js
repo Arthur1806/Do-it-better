@@ -18,6 +18,7 @@ import { ganharXP, removerXP, nivelInfo, xpDoDia } from './xp.js';
 import { alternarItem } from './rotina.js';
 import { contagens, listar, concluir, reabrir, xpDaPrioridade, passouDoPrazo } from './pendencias.js';
 import { proximaFicha, treinosNaSemana, iniciarTreino, abrirTreinoAtivo } from './treinos.js';
+import { refeicoesDoDia, marcaRefeicao, alternarRefeicao, limiteRefeicao, situacao as situacaoRefeicao, xpRefeicaoAgora } from './dieta.js';
 import { aguaHoje, adicionarAgua, ultimaNota, abrirNotas, comprasFaltando, abrirCompras, totalGastosMes, abrirGastos } from './extras.js';
 import { anel, barras } from './graficos.js';
 import {
@@ -410,7 +411,7 @@ function acaoBloco(b) {
     case 'rotina': return irPara('rotina');
     case 'pendencias': return irPara('pendencias', { filtro: contagens().atrasadas ? 'atrasadas' : 'hoje' });
     case 'treino':
-    case 'metaTreinos': return irPara('treinos');
+    case 'metaTreinos': return irPara('treinos', { sub: 'treino' });
     case 'agua': return adicionarAgua(1);
     case 'notas': return abrirNotas();
     case 'compras': return abrirCompras();
@@ -469,7 +470,7 @@ export function montar(el) {
         if (!editando) abrirTreinoAtivo();
         break;
       case 'abrir-treinos':
-        if (!editando) irPara('treinos');
+        if (!editando) irPara('treinos', { sub: 'treino' });
         break;
       case 'agua-mais':
         if (!editando) adicionarAgua(1);
@@ -506,7 +507,10 @@ export function montar(el) {
         irPara('pendencias');
         break;
       case 'ir-treinos':
-        irPara('treinos');
+        irPara('treinos', { sub: 'treino' });
+        break;
+      case 'ir-dieta':
+        irPara('treinos', { sub: 'dieta' });
         break;
       case 'novo-item':
         document.getElementById('fab').click();
@@ -562,21 +566,26 @@ function itensDoPlano() {
   if (t.fichas.length && (treinouHoje || t.emAndamento || semana < d.ajustes.metaTreinosSemana)) {
     itens.push({ tipo: 'treino', id: prox ? prox.id : '', emoji: '🏋️', nome: t.emAndamento ? `${t.emAndamento.fichaNome} (em andamento)` : prox ? prox.nome : 'Treino', horario: null, feito: treinouHoje && !t.emAndamento, xp: d.ajustes.xp.treino, andamento: !!t.emAndamento });
   }
+  for (const r of refeicoesDoDia(hoje)) {
+    const marca = marcaRefeicao(r.id, hoje);
+    itens.push({ tipo: 'refeicao', id: r.id, emoji: r.emoji || '🍽️', nome: r.nome, horario: r.horario || null, limite: limiteRefeicao(r), feito: !!marca, marca, xp: marca ? null : xpRefeicaoAgora(r), refeicao: r });
+  }
   // atrasadas primeiro, depois por horário (sem horário vai para o fim)
   const ordem = (a, b) => (b.atrasadaDias ? 1 : 0) - (a.atrasadaDias ? 1 : 0) || (a.horario || '99:99').localeCompare(b.horario || '99:99');
   return { pendentes: itens.filter((x) => !x.feito).sort(ordem), feitos: itens.filter((x) => x.feito) };
 }
 
-const TIPO_ROTULO = { rotina: 'Rotina', check: 'Desafio', pend: 'Pendência', treino: 'Treino' };
+const TIPO_ROTULO = { rotina: 'Rotina', check: 'Desafio', pend: 'Pendência', treino: 'Treino', refeicao: 'Refeição' };
 
 function linhaPlano(x) {
-  const f = x.horario && x.tipo !== 'pend' ? fatorHorario(x.horario) : null;
+  const f = x.horario && x.tipo !== 'pend' ? fatorHorario(x.limite || x.horario) : null;
   const atrasado = !x.feito && ((f && !f.noPrazo) || x.vencida);
   let status = '';
   if (x.feito) {
     if (x.marca && x.marca.fator !== undefined && x.marca.fator < 1) status = `feito com atraso · ${Math.round(x.marca.fator * 100)}% do XP`;
     else status = x.tipo === 'treino' ? 'treino feito hoje 💪' : 'feito ✓';
   } else if (x.tipo === 'treino') status = x.andamento ? 'continuar' : 'começar agora';
+  else if (x.tipo === 'refeicao') status = situacaoRefeicao(x.refeicao).texto;
   else if (x.tipo === 'pend') status = x.vencida ? 'atrasada · ½ XP' : x.horario ? `prazo até ${x.horario}` : 'prazo: hoje';
   else if (x.horario) status = f.noPrazo ? (f.falta <= 60 ? `faltam ${f.falta} min` : `até ${x.horario}`) : `atrasado · ${f.pct}%`;
   else status = 'qualquer hora';
@@ -617,6 +626,7 @@ function planoHTML() {
       <button class="btn-texto" data-acao="ir-rotina">🔁 Rotina</button>
       <button class="btn-texto" data-acao="ir-pendencias">📌 Pendências</button>
       <button class="btn-texto" data-acao="ir-treinos">🏋️ Treinos</button>
+      <button class="btn-texto" data-acao="ir-dieta">🥗 Dieta</button>
     </div>
   </section>`;
 }
@@ -772,6 +782,7 @@ export function render(el, params = {}) {
 function marcarDoPlano(tipo, id) {
   if (tipo === 'rotina') return alternarItem(id);
   if (tipo === 'check') return alternarCheck(id);
+  if (tipo === 'refeicao') return alternarRefeicao(id);
   if (tipo === 'pend') {
     const p = dados().pendencias.find((x) => x.id === id);
     if (!p) return;

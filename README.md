@@ -8,6 +8,17 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
+## Novidades da versão 5.2 — Dieta 🥗
+
+- **A aba Treinos agora tem Treino e Dieta:** um seletor no topo (igual ao da aba Tarefas) troca entre as fichas de treino e o seu **plano alimentar**.
+- **Suas refeições com horário:** crie cada refeição (café da manhã, almoço, pré-treino, jantar...) com **horário**, **o que comer** (quantidade + alimento), calorias e proteína (opcionais), observações e os **dias da semana** em que vale. Sem tempo para montar? Toque em **Usar um modelo** e ajuste depois.
+- **Sempre sabendo o que comer:** o card **Próxima refeição** mostra o que vem a seguir, quanto falta ("em 20 min", "hora de comer!") e os alimentos. Um toque em **✓ Comi** marca a refeição — o check reinicia sozinho todo dia.
+- **No Plano de hoje:** as refeições aparecem na tela Hoje junto com rotina, desafios e treino, em ordem de horário.
+- **Aviso na barra de abas:** a aba Treinos ganha um ponto quando chega a hora de uma refeição.
+- **Metas do dia:** calorias e proteína consumidas (somadas quando você marca "Comi") contra a sua meta, mais os pontinhos da semana.
+- **XP:** cada refeição vale **+8 XP** (cheio até 1h depois do horário; depois 75% → 50% → 25%) e cumprir todas as refeições do dia dá **+30 XP** de bônus. O pet também fica mais forte.
+- A dieta é **privada**: não aparece no perfil público nem para os amigos.
+
 ## Novidades da versão 5.1 — Online 🌎
 
 - **Conta e nuvem:** crie uma conta com **e-mail, senha e nick** (aba **🏆 Social**). Não mandamos e-mail: na hora você recebe um **código de recuperação** — guarde (print!) para trocar a senha se esquecer.

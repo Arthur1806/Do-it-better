@@ -10,7 +10,7 @@
 // =============================================================
 
 const ORDEM = ['hoje', 'tarefas', 'treinos', 'pet', 'social', 'perfil'];
-const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treinos', pet: 'Pet', social: 'Social', perfil: 'Perfil' };
+const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treino & Dieta', pet: 'Pet', social: 'Social', perfil: 'Perfil' };
 
 // Atalhos antigos continuam funcionando:
 //   'rotina' e 'pendencias' agora são seções da aba Tarefas;
@@ -18,6 +18,8 @@ const TITULOS = { hoje: 'Hoje', tarefas: 'Tarefas', treinos: 'Treinos', pet: 'Pe
 const ATALHOS = {
   rotina: ['tarefas', { sub: 'rotina' }],
   pendencias: ['tarefas', { sub: 'pendencias' }],
+  // a dieta fica na aba Treinos (v5.2)
+  dieta: ['treinos', { sub: 'dieta' }],
 };
 const SECOES_DO_PET = ['loja', 'personagem', 'colecao', 'cuidar'];
 

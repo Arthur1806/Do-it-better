@@ -14,11 +14,12 @@ import { fecharDiaDoPet } from './pet.js';
 export function registroDia(dia) {
   const d = dados();
   if (!d.diario[dia]) {
-    d.diario[dia] = { rotina: {}, checks: {}, agua: 0, aguaLanc: null, bonusRotina: null, resumo: null };
+    d.diario[dia] = { rotina: {}, checks: {}, refeicoes: {}, agua: 0, aguaLanc: null, bonusRotina: null, bonusDieta: null, resumo: null };
   }
   const r = d.diario[dia];
   r.rotina ||= {};
   r.checks ||= {};
+  r.refeicoes ||= {};
   return r;
 }
 
