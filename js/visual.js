@@ -180,6 +180,7 @@ export function buscarItem(cat, valor) {
 
 /** O item está liberado para usar? */
 export function liberado(cat, item, d = dados()) {
+  if (d.meta && d.meta.admin) return true; // modo admin: tudo liberado
   const dd = item.d;
   switch (dd.tipo) {
     case 'gratis':

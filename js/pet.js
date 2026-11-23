@@ -240,5 +240,6 @@ export function cuidar(acao) {
     inv[acao]--;
   }
   aplicar(item.efeito);
+  if (['comida', 'agua', 'racao', 'petisco'].includes(acao)) d.stats.alimentou = (d.stats.alimentou || 0) + 1;
   return { ok: true, msg: `${item.emoji} ${p.nome} recebeu ${item.nome}!${comprou ? ` (−${item.preco} 🪙)` : ''}` };
 }

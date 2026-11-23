@@ -8,7 +8,7 @@
 
 import { dados, alterar, exportar, importar, apagarTudo, SCHEMA_VERSION, tamanhoKB } from './store.js';
 import { hojeKey, esc, formatarData, formatarDataCurta, formatarDataHora, formatarNumero, formatarHora, lerNumero, DIAS_LETRA, diaSemana, plural } from './utils.js';
-import { nivelInfo, xpUltimosDias, melhorDia, TITULOS, xpParaChegar, pocaoAtiva, NIVEL_MAX, PRESTIGIO_MAX, podePrestigio, fazerPrestigio, bonusPrestigio } from './xp.js';
+import { nivelInfo, xpUltimosDias, melhorDia, TITULOS, xpParaChegar, pocaoAtiva, NIVEL_MAX, PRESTIGIO_MAX, podePrestigio, fazerPrestigio, bonusPrestigio, LIMITES_XP } from './xp.js';
 import { sequenciaRotina, multiplicador } from './historico.js';
 import { SERIES, ESPECIAIS, TIERS, progressoSerie, todasMedalhas } from './conquistas.js';
 import { PERSONAGENS, ESTAGIOS, avatarHTML, companheiro, estagioDoNivel, novosNaColecao, personagem } from './personagens.js';
@@ -312,6 +312,7 @@ const SECAO = {
     <h2 class="secao-titulo">Conta e nuvem</h2>
     <section class="card ajustes">
       <button class="ajuste clicavel" data-acao="ir-conta"><span>☁️ ${Nuvem.logado() ? 'Minha conta e sincronização' : 'Criar conta / entrar (salvar na nuvem)'}</span>${ICONE_SETA_DIR}</button>
+      <a class="ajuste clicavel" href="./privacidade.html"><span>🔒 Privacidade e Termos de Uso</span>${ICONE_SETA_DIR}</a>
     </section>
 
     <h2 class="secao-titulo">Backup</h2>
@@ -392,6 +393,12 @@ function mostrarNiveis() {
   });
 }
 
+const MAX_AJUSTE = {
+  rotinaPadrao: LIMITES_XP.rotina.porAcao, rotinaBonus: LIMITES_XP['bonus-rotina'].porAcao, pendAlta: LIMITES_XP.pendencia.porAcao,
+  pendMedia: LIMITES_XP.pendencia.porAcao, pendBaixa: LIMITES_XP.pendencia.porAcao, treino: LIMITES_XP.treino.porAcao,
+  treinoRecorde: LIMITES_XP.recorde.porAcao, agua: LIMITES_XP.agua.porAcao,
+};
+
 function abrirValoresXP() {
   const d = dados();
   const x = d.ajustes.xp;
@@ -408,8 +415,9 @@ function abrirValoresXP() {
   abrirSheet({
     titulo: 'Valores de XP',
     html: `<form class="form">
-      ${campos.map(([k, n]) => `<label class="ajuste"><span>${n}</span><input class="entrada compacta numero" name="${k}" inputmode="numeric" value="${x[k]}"></label>`).join('')}
+      ${campos.map(([k, n]) => `<label class="ajuste"><span>${n} <small class="apagado">máx. ${MAX_AJUSTE[k]}</small></span><input class="entrada compacta numero" name="${k}" inputmode="numeric" value="${x[k]}"></label>`).join('')}
       <p class="dica">O XP de cada item da rotina e de cada bloco de check é editado no próprio item. Mudanças valem daqui para frente.</p>
+      <p class="dica">⚖️ <b>Regras justas:</b> como existe ranking com outras pessoas, cada ação tem um XP máximo e cada tipo de atividade tem um limite por dia (hábitos 400, pendências 240, treinos 300...). Passou do limite, a atividade continua valendo para a rotina, o pet e os desafios.</p>
       <button class="btn secundario largo" type="button" data-padrao>Restaurar padrões</button>
       <button class="btn primario largo" type="submit">Salvar</button>
     </form>`,
@@ -422,7 +430,7 @@ function abrirValoresXP() {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         alterar(() => {
-          campos.forEach(([k]) => (x[k] = Math.max(0, Math.round(lerNumero(form.elements[k].value, x[k])))));
+          campos.forEach(([k]) => (x[k] = Math.min(MAX_AJUSTE[k], Math.max(0, Math.round(lerNumero(form.elements[k].value, x[k]))))));
         });
         fechar();
         toast('Valores de XP salvos ⚙️');

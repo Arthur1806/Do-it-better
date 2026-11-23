@@ -8,7 +8,7 @@
 import { dados, alterar } from './store.js';
 import { hojeKey, esc, uid, MESES, DIAS_LETRA, ORDEM_SEMANA, diaSemana, formatarData, lerNumero, plural } from './utils.js';
 import { registroDia, lerDia, valeNoDia, resumoRotina, statusDia, sequenciaRotina, multiplicador, atualizarMelhoresSequencias, fatorHorario, xpComHorario, textoHorario } from './historico.js';
-import { ganharXP, removerXP } from './xp.js';
+import { ganharXP, removerXP, LIMITES_XP } from './xp.js';
 import {
   abrirSheet, confirmar, toast, vibrar, confete,
   seletorDiasHTML, ligarSeletorDias, lerDias, textoDias,
@@ -291,7 +291,7 @@ export function abrirFormItem(item = null) {
     </label>
     <div class="campo"><span>Ícone</span>${seletorEmojiHTML(item ? item.emoji : '✅')}</div>
     <label class="campo"><span>XP por dia cumprido</span>
-      <input class="entrada" name="xp" inputmode="numeric" value="${item ? item.xp : d.ajustes.xp.rotinaPadrao}">
+      <input class="entrada" name="xp" inputmode="numeric" value="${item ? item.xp : d.ajustes.xp.rotinaPadrao}" placeholder="máx. ${LIMITES_XP.rotina.porAcao}">
     </label>
     <div class="campo"><span>Horário limite</span>
       <div class="chips-linha">
@@ -330,7 +330,7 @@ export function abrirFormItem(item = null) {
           form.elements.nome.focus();
           return;
         }
-        const xp = Math.max(0, Math.round(lerNumero(form.elements.xp.value, d.ajustes.xp.rotinaPadrao)));
+        const xp = Math.min(LIMITES_XP.rotina.porAcao, Math.max(0, Math.round(lerNumero(form.elements.xp.value, d.ajustes.xp.rotinaPadrao))));
         const dias = lerDias(corpo);
         const emoji = form.elements.emoji.value.trim() || '✅';
         const horario = form.elements.horario.value || null;

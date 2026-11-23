@@ -17,7 +17,7 @@ import * as Nuvem from './nuvem.js';
 import { hojeKey, inicioSemana } from './utils.js';
 import { nivelInfo } from './xp.js';
 import { xpDaSemana, ligaAtual } from './missoes.js';
-import { sequenciaRotina } from './historico.js';
+import { sequenciaRotina, resumoRotina } from './historico.js';
 import { fisicoAtual } from './visual.js';
 
 const CHAVE_META = 'doitbetter:nuvem';
@@ -82,6 +82,11 @@ export function resumoPublico() {
     xp_semana: xpDaSemana(),
     liga: ligaAtual().i,
     no_ranking: d.ajustes.noRanking !== false,
+    // status de hoje (usado pelos lembretes no celular)
+    status_dia: (() => {
+      const r = resumoRotina(hojeKey());
+      return { dia: hojeKey(), feitos: r.feitos, total: r.total, fome: (d.pet.comida ?? 80) < 30, sede: (d.pet.agua ?? 80) < 30, pet: d.pet.nome || '', sequencia: sequenciaRotina() };
+    })(),
   };
 }
 

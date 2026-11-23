@@ -7,13 +7,14 @@
 // Se criar um arquivo novo, adicione-o também na lista ARQUIVOS.
 // =============================================================
 
-const VERSAO = '5.2.0';
+const VERSAO = '6.1.0';
 const CACHE = `do-it-better-v${VERSAO}`;
 
 // Todos os caminhos são relativos (o site roda em /do-it-better/)
 const ARQUIVOS = [
   './',
   './index.html',
+  './privacidade.html',
   './manifest.json',
   './css/style.css',
   './css/jogo.css',
@@ -55,6 +56,9 @@ const ARQUIVOS = [
   './js/nuvem.js',
   './js/sync.js',
   './js/social.js',
+  './js/admin.js',
+  './js/instalar.js',
+  './js/jornada.js',
   './icons/icon.svg',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
@@ -97,6 +101,11 @@ self.addEventListener('fetch', (e) => {
 
   // Abrir o app (navegação) sempre devolve o index.html do cache
   if (req.mode === 'navigate') {
+    // páginas próprias (ex.: privacidade.html) abrem normalmente; o resto abre o app
+    if (url.pathname.endsWith('/privacidade.html')) {
+      e.respondWith(caches.match(req, { ignoreSearch: true }).then((r) => r || fetch(req)));
+      return;
+    }
     e.respondWith(
       caches.match('./index.html').then((r) => r || fetch(req).catch(() => caches.match('./')))
     );

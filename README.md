@@ -8,7 +8,7 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 
 ---
 
-## Novidades da versão 5.2 — Dieta 🥗
+## Novidades da versão 6.1 — Dieta 🥗
 
 - **A aba Treinos agora tem Treino e Dieta:** um seletor no topo (igual ao da aba Tarefas) troca entre as fichas de treino e o seu **plano alimentar**.
 - **Suas refeições com horário:** crie cada refeição (café da manhã, almoço, pré-treino, jantar...) com **horário**, **o que comer** (quantidade + alimento), calorias e proteína (opcionais), observações e os **dias da semana** em que vale. Sem tempo para montar? Toque em **Usar um modelo** e ajuste depois.
@@ -18,6 +18,17 @@ App pessoal (PWA) para organizar o dia a dia como um jogo: você ganha **XP**, s
 - **Metas do dia:** calorias e proteína consumidas (somadas quando você marca "Comi") contra a sua meta, mais os pontinhos da semana.
 - **XP:** cada refeição vale **+8 XP** (cheio até 1h depois do horário; depois 75% → 50% → 25%) e cumprir todas as refeições do dia dá **+30 XP** de bônus. O pet também fica mais forte.
 - A dieta é **privada**: não aparece no perfil público nem para os amigos.
+
+## Novidades da versão 6.0 — Pronto para lançar 🚀
+
+- **⚖️ Regras justas de XP:** com ranking público, cada ação tem um XP máximo (hábito 30, check 40, pendência 40, treino 150...) e cada tipo de atividade tem um limite por dia (hábitos 400, pendências 240, treinos 300...). Passou do limite, a atividade continua valendo para a rotina, o pet, as sequências e os desafios — só não rende mais XP. Os valores de XP dos ajustes também têm teto. Detalhes em `LIMITES_XP` (`js/xp.js`).
+- **📲 Tela de instalação:** quem abre o app pelo navegador do celular vê primeiro o passo a passo para instalar (iPhone no Safari, iPhone dentro do WhatsApp/Instagram e botão "Instalar" no Android). No iPhone o Safari e o app instalado não dividem dados, então instalar primeiro evita perder progresso.
+- **🧭 Jornada inicial:** um tutorial em 7 missões, uma de cada vez, no topo da tela Hoje (marcar hábito → alimentar o pet → abrir o baú → resgatar desafio → criar conta → adicionar amigo → fechar a rotina 100%), com moedas, DNA e escudo de prêmio.
+- **☀️ Resumo de ontem:** na primeira abertura do dia, um relatório do dia anterior (hábitos, XP, sequência) com um empurrão para hoje.
+- **🎁 Convide e ganhe:** no cadastro, o campo "Quem te convidou?" (preenchido sozinho pelo link). Quem convidou e quem entrou viram amigos na hora e ganham 🪙300 + 🧬5 cada (prêmio entregue pelo servidor, uma única vez; teto de 30 indicações premiadas por pessoa).
+- **📊 Painel do fundador** (só admin, em Social → Conta): contas, novas por dia, DAU/WAU/MAU, DAU/MAU, retenção D1/D7/D30, amizades, grupos, convites e quem mais convida.
+- **🔒 Privacidade e Termos** (`privacidade.html`), com link no cadastro e nos ajustes.
+- Esquema de dados 6 (migração automática: valores de XP acima do teto são ajustados; quem já jogava pula a jornada inicial).
 
 ## Novidades da versão 5.1 — Online 🌎
 

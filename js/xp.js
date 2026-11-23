@@ -124,6 +124,44 @@ export function bonusPrestigio() {
   return Math.min(PRESTIGIO_MAX, dados().xp.prestigio || 0) * 5;
 }
 
+// -------------------------------------------------------------
+// REGRAS JUSTAS (v6): com ranking público, ninguém pode "fabricar" XP.
+// • porAcao: o máximo de XP base que UMA ação rende (mesmo que o item
+//   tenha sido configurado com mais).
+// • porDia: o máximo de XP base que cada tipo de atividade rende por dia.
+//   Passou do limite, a atividade continua contando para a rotina, o pet,
+//   as sequências e os desafios — só não rende mais XP naquele dia.
+// Desafios, baú e bônus têm valores fixos do jogo e não entram aqui.
+// -------------------------------------------------------------
+export const LIMITES_XP = {
+  rotina: { porAcao: 30, porDia: 400, nome: 'hábitos' },
+  'bonus-rotina': { porAcao: 60, porDia: 60, nome: 'bônus da rotina' },
+  check: { porAcao: 40, porDia: 160, nome: 'blocos de check' },
+  pendencia: { porAcao: 40, porDia: 240, nome: 'pendências' },
+  treino: { porAcao: 150, porDia: 300, nome: 'treinos' },
+  recorde: { porAcao: 75, porDia: 75, nome: 'recordes' },
+  agua: { porAcao: 20, porDia: 20, nome: 'água' },
+  refeicao: { porAcao: 15, porDia: 60, nome: 'refeições' },
+  'bonus-dieta': { porAcao: 30, porDia: 30, nome: 'bônus da dieta' },
+};
+
+/** XP base já ganho hoje numa fonte (desfazer libera o limite de novo). */
+export function baseUsadaHoje(fonte, dia = hojeKey()) {
+  let t = 0;
+  for (const l of dados().xp.lancamentos) if (l.dia === dia && l.fonte === fonte) t += l.base || 0;
+  return t;
+}
+
+/** Aplica os limites e devolve { base, limitado }. */
+export function limitarBase(fonte, base, dia = hojeKey()) {
+  const lim = LIMITES_XP[fonte];
+  if (!lim) return { base, limitado: false };
+  const porAcao = Math.min(base, lim.porAcao);
+  const resta = Math.max(0, lim.porDia - baseUsadaHoje(fonte, dia));
+  const final = Math.max(0, Math.min(porAcao, resta));
+  return { base: final, limitado: final < base };
+}
+
 /**
  * Dá XP ao jogador.
  * @param {object} p
@@ -138,6 +176,10 @@ export function ganharXP({ base, fonte, ref = null, rotulo = '', multiplicar = t
   const d = dados();
   const dia = hojeKey();
   const nivelAntes = nivelInfo(d.xp.total).nivel;
+  // regras justas: limite por ação e por dia
+  const lim = limitarBase(fonte, Math.max(0, Math.round(base || 0)), dia);
+  const baseOriginal = base;
+  base = lim.base;
   // multiplicador de sequência + poção de XP + pet bem cuidado (+5%)
   const mult = multiplicar ? multiplicadorTotal() : 0;
   const xp = Math.round(base * (1 + mult / 100));
@@ -149,6 +191,10 @@ export function ganharXP({ base, fonte, ref = null, rotulo = '', multiplicar = t
   d.xp.porDia[dia] = (d.xp.porDia[dia] || 0) + xp;
   d.carteira.moedas += moedas;
   aoGanharXP(lanc); // o pet fica mais forte com as suas atividades
+  if (lim.limitado) {
+    lanc.limitado = true;
+    emitir('xp-limite', { fonte, nome: LIMITES_XP[fonte].nome, porDia: LIMITES_XP[fonte].porDia, porAcao: LIMITES_XP[fonte].porAcao, pedido: baseOriginal, base });
+  }
   emitir('xp', lanc);
   const depois = nivelInfo(d.xp.total);
   if (depois.nivel > nivelAntes) emitir('nivel', depois);
